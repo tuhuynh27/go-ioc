@@ -123,3 +123,7 @@ notificationService :=
 
 notificationService.SendNotifications("Hello, World!")
 ```
+
+## Demo
+
+Please check the demo Git repository [here](https://github.com/tuhuynh27/go-ioc-gin-demo)
