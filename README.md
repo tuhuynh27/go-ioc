@@ -47,7 +47,8 @@ The container maintains internal maps to track components and their implementati
 To use Go IoC in your project:
 
 ```bash
-go get github.com/tuhuynh27/go-ioc
+go get github.com/tuhuynh27/go-ioc@latest
+go install github.com/tuhuynh27/go-ioc/cmd/generate@latest
 ```
 
 ### Defining Components
@@ -92,7 +93,7 @@ func (s *NotificationService) SendNotifications(msg string) {
 Run the code generator to create the dependency injection container:
 
 ```bash
-go run cmd/iocgen/main.go -dir ./your/project/dir
+go generate ./wire
 ```
 
 This will generate a `wire/wire_gen.go` file in your project directory.
