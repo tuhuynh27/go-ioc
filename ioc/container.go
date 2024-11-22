@@ -104,8 +104,8 @@ func (c *Container) register(component interface{}) error {
 
 	// Convert interface names to full paths
 	fullImplements := make([]string, len(implements))
-	for i, iface := range implements {
-		fullImplements[i] = getFullInterfaceName(t, iface)
+	for i, _interface := range implements {
+		fullImplements[i] = getFullInterfaceName(t, _interface)
 	}
 
 	def := &componentDefinition{

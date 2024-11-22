@@ -40,7 +40,7 @@ The container maintains internal maps to track components, their definitions, an
 
 ## Usage
 
-To use Keva Go IoC in your project, you need first to download it:
+To use Go IoC in your project, you need first to download it:
 
 ```
 go get github.com/tuhuynh27/go-ioc
