@@ -195,13 +195,13 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 					if strings.HasSuffix(c.Package, pkgName) {
 						// For other interfaces, check implementation
 						for _, impl := range c.Implements {
-							if strings.HasSuffix(impl, interfaceName) {
+							if strings.HasSuffix(impl, interfaceName) && c.Qualifier == dep.Qualifier {
 								depVarName = varNames[c.Package+"."+c.Type]
 								break
 							}
 						}
 						// Also check if component type matches interface name directly
-						if c.Type == interfaceName {
+						if c.Type == interfaceName && c.Qualifier == dep.Qualifier {
 							depVarName = varNames[c.Package+"."+c.Type]
 							break
 						}
