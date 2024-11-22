@@ -125,44 +125,33 @@ func ParseComponents(rootDir string) ([]Component, error) {
 					// Check if this struct has a Component field
 					hasComponent := false
 					for _, field := range structType.Fields.List {
-						if ident, ok := field.Type.(*ast.Ident); ok {
-							if ident.Name == "Component" {
-								hasComponent = true
-								log.Printf("Found Component field in %s", comp.Name)
-								if field.Tag != nil {
-									tag := parseStructTag(field.Tag.Value)
-									if name, ok := tag["name"]; ok {
-										comp.Name = name
-									}
-								}
-							} else if ident.Name == "Qualifier" {
-								if field.Tag != nil {
-									tag := parseStructTag(field.Tag.Value)
-									if value, ok := tag["value"]; ok {
-										comp.Qualifier = value
-										log.Printf("Found Qualifier: %s", value)
-									}
+						// Check for Component field
+						if ident, ok := field.Type.(*ast.Ident); ok && ident.Name == "Component" {
+							hasComponent = true
+							log.Printf("Found Component field in %s", comp.Name)
+							if field.Tag != nil {
+								tag := parseStructTag(field.Tag.Value)
+								if name, ok := tag["name"]; ok {
+									comp.Name = name
 								}
 							}
-						} else if sel, ok := field.Type.(*ast.SelectorExpr); ok {
-							// Handle Component field from imported package
-							if sel.Sel.Name == "Component" {
-								hasComponent = true
-								log.Printf("Found Component field in %s", comp.Name)
-								if field.Tag != nil {
-									tag := parseStructTag(field.Tag.Value)
-									if name, ok := tag["name"]; ok {
-										comp.Name = name
-									}
+						} else if sel, ok := field.Type.(*ast.SelectorExpr); ok && sel.Sel.Name == "Component" {
+							hasComponent = true
+							log.Printf("Found Component field in %s", comp.Name)
+							if field.Tag != nil {
+								tag := parseStructTag(field.Tag.Value)
+								if name, ok := tag["name"]; ok {
+									comp.Name = name
 								}
-							} else if sel.Sel.Name == "Qualifier" {
-								if field.Tag != nil {
-									tag := parseStructTag(field.Tag.Value)
-									if value, ok := tag["value"]; ok {
-										comp.Qualifier = value
-										log.Printf("Found Qualifier: %s", value)
-									}
-								}
+							}
+						}
+
+						// Check for Qualifier field and tag
+						if field.Tag != nil {
+							tag := parseStructTag(field.Tag.Value)
+							if value, ok := tag["value"]; ok {
+								comp.Qualifier = value
+								log.Printf("Found Qualifier: %s", value)
 							}
 						}
 

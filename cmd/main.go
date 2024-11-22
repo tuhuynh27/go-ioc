@@ -25,6 +25,7 @@ func main() {
 
 	// Parse components
 	components, err := generator.ParseComponents(absDir)
+
 	if err != nil {
 		log.Fatalf("Error parsing components: %v", err)
 	}
