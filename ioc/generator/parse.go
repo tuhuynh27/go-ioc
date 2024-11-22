@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bufio"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -25,11 +26,48 @@ type Dependency struct {
 	Qualifier string
 }
 
+func getModulePath(rootDir string) (string, error) {
+	// Find go.mod file by walking up directories
+	dir := rootDir
+	for {
+		modPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(modPath); err == nil {
+			// Found go.mod, read module path
+			file, err := os.Open(modPath)
+			if err != nil {
+				return "", err
+			}
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.HasPrefix(line, "module ") {
+					return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+				}
+			}
+			return "", scanner.Err()
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", os.ErrNotExist
+		}
+		dir = parent
+	}
+}
+
 func ParseComponents(rootDir string) ([]Component, error) {
 	var components []Component
 	fset := token.NewFileSet()
 
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	// Get module path from go.mod
+	modulePath, err := getModulePath(rootDir)
+	if err != nil {
+		return nil, err
+	}
+
+	err = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -74,8 +112,8 @@ func ParseComponents(rootDir string) ([]Component, error) {
 						return true
 					}
 
-					// Construct full package path
-					fullPkgPath := filepath.Join("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple", relPath)
+					// Construct full package path using module path
+					fullPkgPath := filepath.Join(modulePath, relPath)
 					fullPkgPath = strings.ReplaceAll(fullPkgPath, string(filepath.Separator), "/")
 
 					comp := Component{

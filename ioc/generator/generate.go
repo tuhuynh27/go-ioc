@@ -58,8 +58,9 @@ func (g *Generator) Generate(baseDir string) error {
 		return fmt.Errorf("failed to create wire directory: %w", err)
 	}
 
-	// Generate component initializations first
-	inits := g.generateComponentInits(g.components)
+	// Order components by dependencies before generating initializations
+	orderedComponents := g.orderComponentsByDependencies()
+	inits := g.generateComponentInits(orderedComponents)
 
 	// Define template functions
 	funcMap := template.FuncMap{
@@ -192,24 +193,26 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 				// Find matching component for the dependency
 				for _, c := range components {
 					if strings.HasSuffix(c.Package, pkgName) {
-						// For MessageService interface, match by qualifier
-						if interfaceName == "MessageService" {
-							if dep.Qualifier == "email" && c.Type == "EmailService" {
+						// For other interfaces, check implementation
+						for _, impl := range c.Implements {
+							if strings.HasSuffix(impl, interfaceName) {
 								depVarName = varNames[c.Package+"."+c.Type]
 								break
-							} else if dep.Qualifier == "sms" && c.Type == "SMSService" {
-								depVarName = varNames[c.Package+"."+c.Type]
-								break
-							}
-						} else {
-							// For other interfaces, check implementation
-							for _, impl := range c.Implements {
-								if strings.HasSuffix(impl, interfaceName) {
-									depVarName = varNames[c.Package+"."+c.Type]
-									break
-								}
 							}
 						}
+						// Also check if component type matches interface name directly
+						if c.Type == interfaceName {
+							depVarName = varNames[c.Package+"."+c.Type]
+							break
+						}
+					}
+				}
+			} else {
+				// Handle non-interface dependencies by direct type matching
+				for _, c := range components {
+					if c.Type == depType {
+						depVarName = varNames[c.Package+"."+c.Type]
+						break
 					}
 				}
 			}
@@ -251,8 +254,16 @@ func (g *Generator) orderComponentsByDependencies() []Component {
 	var ordered []Component
 	g.visited = make(map[string]bool)
 
+	// Start with components that have no dependencies
 	for _, comp := range g.components {
-		if !g.visited[comp.Name] {
+		if len(comp.Dependencies) == 0 && !g.visited[comp.Package+"."+comp.Type] {
+			g.dfsVisit(comp, &ordered)
+		}
+	}
+
+	// Process remaining components
+	for _, comp := range g.components {
+		if !g.visited[comp.Package+"."+comp.Type] {
 			g.dfsVisit(comp, &ordered)
 		}
 	}
@@ -261,14 +272,24 @@ func (g *Generator) orderComponentsByDependencies() []Component {
 }
 
 func (g *Generator) dfsVisit(comp Component, ordered *[]Component) {
-	g.visited[comp.Name] = true
+	g.visited[comp.Package+"."+comp.Type] = true
 
+	// Visit dependencies first
 	for _, dep := range comp.Dependencies {
-		for _, other := range g.components {
-			if strings.HasSuffix(other.Package, strings.Split(dep.Type, ".")[0]) &&
-				strings.HasSuffix(other.Type, strings.Split(dep.Type, ".")[1]) {
-				if !g.visited[other.Name] {
-					g.dfsVisit(other, ordered)
+		if strings.Contains(dep.Type, ".") {
+			parts := strings.Split(dep.Type, ".")
+			pkgName := parts[0]
+			typeName := parts[1]
+
+			// Find and visit dependency component
+			for _, other := range g.components {
+				if strings.HasSuffix(other.Package, pkgName) {
+					// Handle both direct type matches and interface implementations
+					if other.Type == typeName || contains(other.Implements, typeName) {
+						if !g.visited[other.Package+"."+other.Type] {
+							g.dfsVisit(other, ordered)
+						}
+					}
 				}
 			}
 		}
