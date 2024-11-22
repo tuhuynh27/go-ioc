@@ -105,14 +105,15 @@ func InitializeContainer() (*ioc.Container, error) {
 	// Get unique imports
 	imports := make(map[string]bool)
 	for _, comp := range g.components {
-		if comp.Package != "" && comp.Package != "github.com/tuhuynh27/go-ioc/ioc" {
+		// Only add valid import paths (must contain at least one '/')
+		if strings.Contains(comp.Package, "/") && comp.Package != "github.com/tuhuynh27/go-ioc/ioc" {
 			imports[comp.Package] = true
 		}
 		// Add imports for interfaces
 		for _, iface := range comp.Implements {
 			if idx := strings.LastIndex(iface, "."); idx != -1 {
 				pkgPath := iface[:idx]
-				if pkgPath != "" && pkgPath != "github.com/tuhuynh27/go-ioc/ioc" {
+				if strings.Contains(pkgPath, "/") && pkgPath != "github.com/tuhuynh27/go-ioc/ioc" {
 					imports[pkgPath] = true
 				}
 			}
@@ -122,10 +123,6 @@ func InitializeContainer() (*ioc.Container, error) {
 	// Convert imports map to sorted slice
 	var importSlice []string
 	for imp := range imports {
-		// Skip empty or invalid imports
-		if imp != "" && !strings.HasPrefix(imp, "github.com/") {
-			continue
-		}
 		importSlice = append(importSlice, imp)
 	}
 	sort.Strings(importSlice)
@@ -164,10 +161,25 @@ func (g *Generator) findPackageForType(pkgName string) string {
 func (g *Generator) generateComponentInits(components []Component) []componentInit {
 	var inits []componentInit
 	varNames := make(map[string]string)
+	nameCount := make(map[string]int) // Track count of each base name
 
-	// First pass: create variable names for all components
-	for i, comp := range components {
-		varName := fmt.Sprintf("comp%d", i)
+	// First pass: create meaningful variable names for all components
+	for _, comp := range components {
+		// Convert type name to camelCase
+		baseName := toCamelCase(comp.Type)
+		// Ensure the variable name starts with a lowercase letter
+		baseName = strings.ToLower(baseName[:1]) + baseName[1:]
+
+		// Check if this base name has been used before
+		count := nameCount[baseName]
+		nameCount[baseName]++
+
+		// Create final variable name (add suffix if duplicate)
+		varName := baseName
+		if count > 0 {
+			varName = fmt.Sprintf("%s%d", baseName, count+1)
+		}
+
 		varNames[comp.Package+"."+comp.Type] = varName
 	}
 
@@ -296,4 +308,13 @@ func (g *Generator) dfsVisit(comp Component, ordered *[]Component) {
 	}
 
 	*ordered = append(*ordered, comp)
+}
+
+func toCamelCase(s string) string {
+	// Handle common suffixes
+	s = strings.TrimSuffix(s, "Impl")
+	s = strings.TrimSuffix(s, "Implementation")
+	s = strings.TrimSuffix(s, "Service")
+	s = strings.TrimSuffix(s, "Repository")
+	return s
 }

@@ -72,8 +72,13 @@ func ParseComponents(rootDir string) ([]Component, error) {
 			return err
 		}
 
-		if !info.IsDir() || strings.HasPrefix(info.Name(), ".") {
+		// Skip non-directories and hidden directories
+		if !info.IsDir() {
 			return nil
+		}
+
+		if strings.HasPrefix(filepath.Base(path), ".") {
+			return filepath.SkipDir
 		}
 
 		log.Printf("Scanning directory: %s", path)
