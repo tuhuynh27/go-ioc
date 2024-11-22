@@ -17,22 +17,23 @@ func InitializeContainer() (*ioc.Container, error) {
     }
     container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/logger.StdoutLogger", comp0)
     
-    // Initialize EmailService
-    comp1 := &message.EmailService{
-        Logger: comp0,
-    }
-    container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/message.EmailService", comp1)
-    
     // Initialize SMSService
-    comp2 := &message.SMSService{
+    comp1 := &message.SMSService{
         Logger: comp0,
     }
-    container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/message.SMSService", comp2)
+    container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/message.SMSService", comp1)
+    
+    // Initialize EmailService
+    comp2 := &message.EmailService{
+        Logger: comp0,
+    }
+    container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/message.EmailService", comp2)
     
     // Initialize NotificationService
     comp3 := &notification.NotificationService{
-        EmailSender: comp1,
-        SmsSender: comp2,
+        Logger: comp0,
+        EmailSender: comp2,
+        SmsSender: comp1,
     }
     container.Register("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/notification.NotificationService", comp3)
     
