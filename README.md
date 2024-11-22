@@ -1,127 +1,120 @@
 # Go IoC
 
-Go IoC is a lightweight Inversion of Control (IoC) container for Go (inspired by Spring's APIs), designed to simplify dependency injection and object management in Go applications.
+Go IoC is a lightweight, compile-time Inversion of Control (IoC) container for Go (inspired by Spring's APIs), designed to simplify dependency injection and object management in Go applications.
 
 ## Hasn't this been done already?
 
 While there are other dependency injection solutions for Go, Go IoC takes a unique approach by:
 
+- Providing compile-time dependency injection for better performance and safety
+- Using code generation to avoid runtime reflection
 - Providing a familiar Spring-like API that Java developers will recognize
 - Using struct tags as "annotations" to keep the syntax clean and idiomatic to Go
-- Focusing on simplicity and ease of use while maintaining flexibility
 - Supporting interface implementations and qualifiers in an elegant way
 - Avoiding complex configuration files or setup - just use struct tags
 
 ## How does it work?
 
-Go IoC uses Go's reflection capabilities to:
+Go IoC uses code generation to:
 
-1. Scan struct tags during component registration to identify:
+1. Scan struct tags during build time to identify:
    - Components via the `Component` struct embedding
    - Interface implementations via `implements` tags
    - Qualifiers via `value` tags
    - Dependencies via `autowired` tags
 
-2. Build a dependency graph by analyzing the relationships between components
+2. Generate type-safe dependency injection code that:
+   - Creates components in the correct order
+   - Injects dependencies properly
+   - Handles interface implementations and qualifiers
+   - Provides compile-time safety
 
-3. Resolve and inject dependencies by:
-   - Looking up components by name or interface
-   - Matching qualifiers when multiple implementations exist
-   - Using reflection to set field values
+3. Create a wire_gen.go file that contains all the initialization logic
 
-The container maintains internal maps to track components, their definitions, and interface implementations, making dependency resolution fast and reliable.
+The container maintains internal maps to track components and their implementations, making dependency lookup fast and reliable.
 
 ## Features
 
-- Component Registration: Register components with annotations for easy management.
-- Dependency Injection: Automatically inject dependencies into components.
-- Interface Implementation: Support for multiple implementations of the same interface.
-- Qualifiers: Use qualifiers to distinguish between different implementations of the same interface.
+- Compile-time Dependency Injection: No runtime reflection for better performance
+- Type Safety: Errors are caught at compile time, not runtime
+- Code Generation: Automatically generates initialization code
+- Component Registration: Register components with annotations for easy management
+- Interface Implementation: Support for multiple implementations of the same interface
+- Qualifiers: Use qualifiers to distinguish between different implementations
 
 ## Usage
 
-To use Go IoC in your project, you need first to download it:
+To use Go IoC in your project:
 
-```
+```bash
 go get github.com/tuhuynh27/go-ioc
-```
-
-Next, import the package in your Go code:
-
-```
-import "github.com/tuhuynh27/go-ioc/ioc"
 ```
 
 ### Defining Components
 
-Components are defined using Go structs with specific annotations. Here's an example of a component definition:
+Components are defined using Go structs with specific annotations:
 
 ```go
 type MessageService interface {
-	SendMessage(msg string) string
+    SendMessage(msg string) string
 }
 
 type EmailService struct {
-	Component  ioc.Component
-	Qualifier  struct{}      `value:"email"`
-	Implements struct{}      `implements:"MessageService"`
+    ioc.Component
+    Logger logger.Logger `autowired:""`
 }
 
 func (s *EmailService) SendMessage(msg string) string {
+    s.Logger.Log("Sending email: " + msg)
     return fmt.Sprintf("Email: %s", msg)
 }
 ```
 
-- `Component`: Marks the struct as a component.
-- `Qualifier`: Specifies a unique identifier for the component.
-- `Implements`: Indicates the interface(s) the component implements.
+### Defining Dependencies
 
-### Defining dependencies
-
-Dependencies are defined using Go structs with specific annotations. Here's an example of a dependency definition:
+Dependencies are defined using struct tags:
 
 ```go
 type NotificationService struct {
-	Component   ioc.Component
-	EmailSender message.MessageService `autowired:"true" qualifier:"email"`
+    ioc.Component
+    EmailSender message.MessageService `autowired:"" qualifier:"email"`
+    SmsSender   message.MessageService `autowired:"" qualifier:"sms"`
 }
 
 func (s *NotificationService) SendNotifications(msg string) {
-	fmt.Println(s.EmailSender.SendMessage(msg))
+    s.EmailSender.SendMessage(msg)
+    s.SmsSender.SendMessage(msg)
 }
 ```
 
-- `Component`: Marks the struct as a component.
-- `Autowired`: Marks a field for dependency injection.
-- `Qualifier`: Specifies a unique identifier for the dependency.
+### Generating Container Code
 
-### Registering Components
+Run the code generator to create the dependency injection container:
 
-To register components, create a new container and use the `RegisterComponents` method:
-
-```go
-container := ioc.NewContainer()
-
-err := container.RegisterComponents(
-	&message.EmailService{},
-	&notification.NotificationService{},
-)
-
-if err != nil {
-	panic(err)
-}
+```bash
+go run cmd/iocgen/main.go -dir ./your/project/dir
 ```
 
-### Using Components
+This will generate a `wire/wire_gen.go` file in your project directory.
 
-Once components are registered, you can retrieve and use them from the container:
+### Using the Container
+
+Use the generated container in your application:
 
 ```go
-notificationService := 
-    container.Get("NotificationService")
-        .(*notification.NotificationService)
+func main() {
+    container, err := wire.InitializeContainer()
+    if err != nil {
+        panic(err)
+    }
 
-notificationService.SendNotifications("Hello, World!")
+    // Get components by name
+    notificationService := container.Get("NotificationService")
+
+    // Get components by interface with qualifier
+    emailSender := container.GetQualified("MessageService", "email")
+    smsSender := container.GetQualified("MessageService", "sms")
+}
 ```
 
 ## Demo
