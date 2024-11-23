@@ -14,6 +14,14 @@ func TestParseComponents(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
+	// Create go.mod file
+	goModContent := `module example.com/test
+go 1.20
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644); err != nil {
+		t.Fatalf("Failed to create go.mod: %v", err)
+	}
+
 	// Create test file structure
 	err = createTestFiles(tmpDir)
 	if err != nil {
@@ -31,6 +39,9 @@ func TestParseComponents(t *testing.T) {
 		t.Errorf("Expected 2 components, got %d", len(components))
 	}
 
+	// Update import paths to match the module
+	expectedLoggerInterface := "example.com/test/logger.Logger"
+
 	// Check logger component
 	loggerFound := false
 	for _, comp := range components {
@@ -39,8 +50,11 @@ func TestParseComponents(t *testing.T) {
 			if len(comp.Implements) != 1 {
 				t.Errorf("Expected 1 interface implementation, got %d", len(comp.Implements))
 			}
-			if comp.Implements[0] != "logger.Logger" {
-				t.Errorf("Expected logger.Logger interface, got %s", comp.Implements[0])
+			if comp.Implements[0] != expectedLoggerInterface {
+				t.Errorf("Expected %s interface, got %s", expectedLoggerInterface, comp.Implements[0])
+			}
+			if comp.Package != "example.com/test/logger" {
+				t.Errorf("Expected package example.com/test/logger, got %s", comp.Package)
 			}
 		}
 	}
@@ -59,6 +73,9 @@ func TestParseComponents(t *testing.T) {
 			if comp.Dependencies[0].Type != "logger.Logger" {
 				t.Errorf("Expected logger.Logger dependency, got %s", comp.Dependencies[0].Type)
 			}
+			if comp.Package != "example.com/test/message" {
+				t.Errorf("Expected package example.com/test/message, got %s", comp.Package)
+			}
 		}
 	}
 	if !serviceFound {
@@ -73,18 +90,18 @@ func createTestFiles(dir string) error {
 		return err
 	}
 
-	// Create logger.go
+	// Create logger.go with fully qualified interface path
 	loggerContent := `
 package logger
 
-import "github.com/tuhuynh27/go-ioc/ioc"
+import "example.com/test/ioc"
 
 type Logger interface {
     Log(message string)
 }
 
 type StdoutLogger struct {
-    ioc.Component ` + "`implements:\"logger.Logger\"`" + `
+    ioc.Component ` + "`implements:\"example.com/test/logger.Logger\"`" + `
 }
 
 func (l *StdoutLogger) Log(message string) {
@@ -101,13 +118,13 @@ func (l *StdoutLogger) Log(message string) {
 		return err
 	}
 
-	// Create email_service.go
+	// Create email_service.go with fully qualified import
 	emailContent := `
 package message
 
 import (
-    "github.com/tuhuynh27/go-ioc/ioc"
-    "github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/logger"
+    "example.com/test/ioc"
+    "example.com/test/logger"
 )
 
 type EmailService struct {
@@ -121,6 +138,22 @@ func (s *EmailService) SendEmail(to, message string) error {
 }
 `
 	if err := os.WriteFile(filepath.Join(messageDir, "email_service.go"), []byte(emailContent), 0644); err != nil {
+		return err
+	}
+
+	// Create ioc package directory and file
+	iocDir := filepath.Join(dir, "ioc")
+	if err := os.MkdirAll(iocDir, 0755); err != nil {
+		return err
+	}
+
+	// Create component.go in ioc package
+	componentContent := `
+package ioc
+
+type Component struct{}
+`
+	if err := os.WriteFile(filepath.Join(iocDir, "component.go"), []byte(componentContent), 0644); err != nil {
 		return err
 	}
 

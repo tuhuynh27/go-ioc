@@ -165,20 +165,16 @@ func (g *Generator) findPackageForType(pkgName string) string {
 func (g *Generator) generateComponentInits(components []Component) []componentInit {
 	var inits []componentInit
 	varNames := make(map[string]string)
-	nameCount := make(map[string]int) // Track count of each base name
+	nameCount := make(map[string]int)
 
 	// First pass: create meaningful variable names for all components
 	for _, comp := range components {
-		// Convert type name to camelCase
 		baseName := comp.Type
-		// Ensure the variable name starts with a lowercase letter
 		baseName = strings.ToLower(baseName[:1]) + baseName[1:]
 
-		// Check if this base name has been used before
 		count := nameCount[baseName]
 		nameCount[baseName]++
 
-		// Create final variable name (add suffix if duplicate)
 		varName := baseName
 		if count > 0 {
 			varName = fmt.Sprintf("%s%d", baseName, count+1)
@@ -187,13 +183,14 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 		varNames[comp.Package+"."+comp.Type] = varName
 	}
 
-	// Second pass: create component initializations
+	// Second pass: create component initializations with interface registrations
 	for _, comp := range components {
 		init := componentInit{
 			VarName:      varNames[comp.Package+"."+comp.Type],
 			Type:         comp.Type,
 			Package:      comp.Package,
 			Dependencies: []componentDep{},
+			Interfaces:   []interfaceReg{},
 		}
 
 		// Add dependencies
@@ -241,6 +238,15 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 			} else {
 				log.Printf("Warning: Could not find component for dependency %s with qualifier %s", dep.Type, dep.Qualifier)
 			}
+		}
+
+		// Add interface registrations
+		for _, iface := range comp.Implements {
+			init.Interfaces = append(init.Interfaces, interfaceReg{
+				Interface: iface,
+				Qualifier: comp.Qualifier,
+				VarName:   init.VarName,
+			})
 		}
 
 		inits = append(inits, init)
