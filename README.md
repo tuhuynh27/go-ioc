@@ -4,13 +4,13 @@ Go IoC brings Spring-style autowiring to Go, offering a compile-time Inversion o
 
 ## Hasn't this been done already?
 
-While there are other dependency injection solutions for Go ([Google's Wire](https://github.com/google/wire/tree/main), [Uber's Dig](https://github.com/uber-go/dig) or [Facebook's Inject](https://github.com/facebookarchive/inject)), Go IoC takes a unique approach by:
+While other DI solutions exist in Go ([Google's Wire](https://github.com/google/wire/tree/main), [Uber's Dig](https://github.com/uber-go/dig) or [Facebook's Inject](https://github.com/facebookarchive/inject)), Go IoC takes a unique approach by:
 
 - Providing a familiar Spring-like API that Java developers will recognize
-- **Using code generation for compile-time DI** - unlike Spring's runtime DI, everything is explicit and compile-time safe
-- Using struct tags and marker/empty structs as "annotations" to keep the syntax clean and idiomatic to Go
-- Supporting interface implementations and qualifiers in an elegant way
-- **Automatic component scanning** - unlike other solutions that require manual registration of each component, Go IoC can automatically discover and wire components through struct tags and markers
+- Using code generation for compile-time safety (unlike Spring's runtime DI)
+- Using struct tags and marker structs as clean "annotations" 
+- Supporting interface implementations and qualifiers elegantly
+- Enabling automatic component scanning via struct tags
 
 ## But why bring @Autowired to Go?
 
@@ -34,19 +34,9 @@ For teams transitioning from Spring/Java to Go, especially those with significan
 
 Go IoC uses code generation to:
 
-1. Scan struct tags during build time to identify:
-   - Components via the `ioc.Component` struct embedding
-   - Interface implementations via `implements` tags
-   - Qualifiers via `value` tags
-   - Dependencies via `autowired` tags
-
-2. Generate type-safe dependency injection code that:
-   - Creates components in the correct order
-   - Injects dependencies properly
-   - Handles interface implementations and qualifiers
-   - Provides compile-time safety
-
-3. Create initialization functions in the generated code that wire everything together
+1. Scan struct tags at build time to identify components, interfaces, qualifiers and dependencies
+2. Generate type-safe dependency injection code that creates and wires components correctly
+3. Create initialization functions that handle all the wiring
 
 ## Usage
 
@@ -194,7 +184,7 @@ func main() {
 | Feature | Go IoC | Google Wire | Uber Dig | Facebook Inject |
 |---------|--------|-------------|-----------|-----------------|
 | Dependency Definition | Struct tags & marker structs | Function providers | Constructor functions | Struct tags |
-| Runtime Overhead | None (compile-time) | None (compile-time) | Reflection-based | Reflection-based |
+| Runtime Overhead | None | None | Reflection-based | Reflection-based |
 | Configuration Style | Spring-like annotations | Explicit provider functions | Constructor injection | Field tags |
 | Interface Binding | Built-in | Manual provider setup | Manual provider setup | Limited support |
 | Qualifier Support | Yes, via struct tags | No built-in support | Via name annotations | No |
@@ -203,18 +193,15 @@ func main() {
 | Compile-time Safety | Yes | Yes | Partial | No |
 | Auto Component Scanning | Yes (via struct tags) | No | No | No |
 
+## Test with Go IoC
+
+Please check the [testing](docs/testing.md) guide for more information.
+
 ## Demo
 
 Please check the demo Git repository (example with Go Gin web framework) [here](https://github.com/tuhuynh27/go-ioc-gin-demo)
 
 ## FAQ
-
-### How do I test components with dependencies?
-
-Go IoC makes testing easier by allowing you to:
-1. Create mock implementations with different qualifiers
-2. Use separate initialization functions for tests with mock dependencies
-3. Create test-specific configurations using the same familiar struct tag syntax
 
 ### What's the performance impact?
 
@@ -222,4 +209,4 @@ None! Go IoC:
 - Uses pure compile-time code generation
 - Has zero runtime overhead
 - Generates plain Go code that's as efficient as hand-written dependency injection
-- No reflection, no runtime container, no map lookups
+- No reflection, no runtime container

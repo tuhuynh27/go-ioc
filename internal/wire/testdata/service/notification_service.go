@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/logger"
+	"github.com/tuhuynh27/go-ioc/internal/wire/testdata/logger"
 	"github.com/tuhuynh27/go-ioc/internal/wire/testdata/service"
 )
 
