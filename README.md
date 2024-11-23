@@ -1,13 +1,13 @@
 # Go IoC: Bring "@Autowired" to Go!
 
-Go IoC brings Spring-style autowiring to Go, offering a lightweight, compile-time Inversion of Control (IoC) container. Unlike Spring's runtime reflection-based `@Autowired`, Go IoC uses code generation to make dependencies explicit and type-safe at compile time, while keeping the familiar and intuitive struct tag syntax for dependency injection.
+Go IoC brings Spring-style autowiring to Go, offering a compile-time Inversion of Control (IoC) solution. Unlike Spring's runtime reflection-based `@Autowired`, Go IoC uses code generation to make dependencies explicit and type-safe at compile time, while keeping the familiar and intuitive struct tag syntax for dependency injection.
 
 ## Hasn't this been done already?
 
 While there are other dependency injection solutions for Go ([Google's Wire](https://github.com/google/wire/tree/main), [Uber's Dig](https://github.com/uber-go/dig) or [Facebook's Inject](https://github.com/facebookarchive/inject)), Go IoC takes a unique approach by:
 
 - Providing a familiar Spring-like API that Java developers will recognize
-- **Using code generation instead of reflection** - unlike Spring's runtime DI, everything is explicit and compile-time safe, avoid runtime (reflection) overhead
+- **Using code generation for compile-time DI** - unlike Spring's runtime DI, everything is explicit and compile-time safe
 - Using struct tags and marker/empty structs as "annotations" to keep the syntax clean and idiomatic to Go
 - Supporting interface implementations and qualifiers in an elegant way
 - **Automatic component scanning** - unlike other solutions that require manual registration of each component, Go IoC can automatically discover and wire components through struct tags and markers
@@ -25,10 +25,10 @@ For teams transitioning from Spring/Java to Go, especially those with significan
   - Easier testing through dependency substitution
 
 - **Best of Both Worlds**: While I love Spring's convenience, I also respect Go's philosophy of explicitness. That's why Go IoC:
-  - Uses code generation instead of reflection
+  - Uses pure compile-time code generation
   - Makes dependencies traceable in generated code
   - Maintains compile-time type safety
-  - Keeps the familiar developer experience without the runtime overhead
+  - Keeps the familiar developer experience without any runtime overhead
 
 ## How does it work?
 
@@ -46,16 +46,13 @@ Go IoC uses code generation to:
    - Handles interface implementations and qualifiers
    - Provides compile-time safety
 
-3. Create a wire_gen.go file that contains all the initialization logic
-
-The container maintains internal maps to track components and their implementations, making dependency lookup fast and reliable.
+3. Create initialization functions in the generated code that wire everything together
 
 ## Usage
 
-To use Go IoC in your project:
+To use Go IoC in your project, install the code generator:
 
 ```bash
-go get github.com/tuhuynh27/go-ioc@latest
 go install github.com/tuhuynh27/go-ioc/cmd/ioc-generate@latest
 ```
 
@@ -64,18 +61,20 @@ go install github.com/tuhuynh27/go-ioc/cmd/ioc-generate@latest
 Components are defined using Go structs with specific annotations:
 
 ```go
+// message/service.go
+package message
+
 type MessageService interface {
     SendMessage(msg string) string
 }
 
 type EmailService struct {
-    ioc.Component // <- This is like a "@Component" annotation
+    Component struct{} // <- This is like a "@Component" annotation
     Implements struct{} `implements:"MessageService"` // <- Specify the interface that this struct implements
     Qualifier struct{} `value:"email"` // <- This is like a "@Qualifier" annotation
 }
 
 func (s *EmailService) SendMessage(msg string) string {
-    s.Logger.Log("Sending email: " + msg)
     return fmt.Sprintf("Email: %s", msg)
 }
 ```
@@ -85,8 +84,11 @@ func (s *EmailService) SendMessage(msg string) string {
 Dependencies are defined using struct tags:
 
 ```go
+// notification/service.go
+package notification
+
 type NotificationService struct {
-    ioc.Component
+    Component struct{}
     EmailSender message.MessageService `autowired:"true" qualifier:"email"` // <- This is like a "@Autowired" annotation
     SmsSender   message.MessageService `autowired:"true" qualifier:"sms"` // <- This is like a "@Autowired" annotation
 }
@@ -97,67 +99,93 @@ func (s *NotificationService) SendNotifications(msg string) {
 }
 ```
 
-### Generating Container Code
+### Generating Initialization Code
 
-Run the code generator to create the dependency injection container:
+Run the code generator in your project root:
 
 ```bash
 ioc-generate
 ```
 
-This will generate a `wire/wire_gen.go` file in your project directory.
+This will scan your project for components and generate the initialization code.
 
 ### Example Generated Code
 
-Here's what the generated `wire/wire_gen.go` file would look like for the components shown above:
+Here's what the generated initialization code would look like:
 
 ```go
-// File: wire_gen.go
+// wire/wire_gen.go
 // Code generated by Go IoC. DO NOT EDIT.
 //go:generate go run github.com/tuhuynh27/go-ioc/cmd/generate -dir=../
 package wire
 
 import (
-    "github.com/tuhuynh27/go-ioc/ioc"
     "your/project/message"
+    "your/project/notification"
+    "your/project/config"
 )
 
-func InitializeContainer() *ioc.Container {
-    container := ioc.NewContainer()
+// Application holds all the wired components
+type Application struct {
+    emailService      *message.EmailService
+    smsService       *message.SmsService
+    notificationService *notification.NotificationService
+}
+
+// Initialize creates and wires all components
+func Initialize() *Application {
+    app := &Application{}
     
-    // Initialize EmailService
-    emailService := &message.EmailService{}
-    container.Register("message.EmailService", emailService)
-    
-    // Initialize SmsService
-    smsService := &message.SmsService{}
-    container.Register("message.SmsService", smsService)
-    
-    // Initialize NotificationService
-    notificationService := &message.NotificationService{
-        EmailSender: emailService,
-        SmsSender:   smsService,
+    app.emailService = &message.EmailService{
     }
-    container.Register("message.NotificationService", notificationService)
     
-    return container
+    app.smsService = &message.SmsService{
+    }
+    
+    app.notificationService = &notification.NotificationService{
+        EmailSender: app.emailService,
+        SmsSender:   app.smsService,
+    }
+    
+    return app
+}
+
+// GetEmailService returns the EmailService instance
+func (app *Application) GetEmailService() *message.EmailService {
+    return app.emailService
+}
+
+// GetSmsService returns the SmsService instance
+func (app *Application) GetSmsService() *message.SmsService {
+    return app.smsService
+}
+
+// GetNotificationService returns the NotificationService instance
+func (app *Application) GetNotificationService() *notification.NotificationService {
+    return app.notificationService
 }
 ```
 
-### Using the Container
+### Using the Generated Code
 
-Use the generated container in your application:
+Use the generated Application struct in your code:
 
 ```go
+// main.go
+package main
+
+import (
+    "your/project/wire"
+)
+
 func main() {
-    container := wire.InitializeContainer()
-
-    // Get components by name
-    notificationService := container.Get("NotificationService").(*NotificationService)
-
-    // Get components by interface with qualifier
-    emailSender := container.GetQualified("MessageService", "email").(*EmailService)
-    smsSender := container.GetQualified("MessageService", "sms").(*SmsService)
+    app := wire.Initialize()
+    
+    // Get the service you need
+    notificationService := app.GetNotificationService()
+    
+    // Use it
+    notificationService.SendNotifications("Hello World!")
 }
 ```
 
@@ -166,13 +194,13 @@ func main() {
 | Feature | Go IoC | Google Wire | Uber Dig | Facebook Inject |
 |---------|--------|-------------|-----------|-----------------|
 | Dependency Definition | Struct tags & marker structs | Function providers | Constructor functions | Struct tags |
-| Runtime Overhead | Minimal (IoC container) | None (compile-time) | Reflection-based | Reflection-based |
+| Runtime Overhead | None (compile-time) | None (compile-time) | Reflection-based | Reflection-based |
 | Configuration Style | Spring-like annotations | Explicit provider functions | Constructor injection | Field tags |
 | Interface Binding | Built-in | Manual provider setup | Manual provider setup | Limited support |
 | Qualifier Support | Yes, via struct tags | No built-in support | Via name annotations | No |
 | Learning Curve | Low (familiar to Spring devs) | Medium | Medium | Low |
 | Code Generation | Yes | Yes | No | No |
-| Compile-time Safety | Partial (runtime lookups) | Yes | Partial | No |
+| Compile-time Safety | Yes | Yes | Partial | No |
 | Auto Component Scanning | Yes (via struct tags) | No | No | No |
 
 ## Demo
@@ -181,18 +209,17 @@ Please check the demo Git repository (example with Go Gin web framework) [here](
 
 ## FAQ
 
-### How do I test components with dependencies injection?
+### How do I test components with dependencies?
 
 Go IoC makes testing easier by allowing you to:
 1. Create mock implementations with different qualifiers
-2. Use the container's `Register` method to override components in tests
-3. Create a separate test container with mock dependencies
+2. Use separate initialization functions for tests with mock dependencies
+3. Create test-specific configurations using the same familiar struct tag syntax
 
 ### What's the performance impact?
 
-Minimal to none! Go IoC:
-
-- Uses code generation instead of runtime reflection
-- Creates a lightweight container with simple map lookups
-- Has no runtime parsing overhead
+None! Go IoC:
+- Uses pure compile-time code generation
+- Has zero runtime overhead
 - Generates plain Go code that's as efficient as hand-written dependency injection
+- No reflection, no runtime container, no map lookups
