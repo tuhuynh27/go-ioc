@@ -10,8 +10,9 @@ import (
 
 func main() {
 	var (
-		dir    = flag.String("dir", ".", "Directory to scan for components")
-		output = flag.String("output", "wire/wire_gen.go", "Output file for generated code")
+		dir     = flag.String("dir", ".", "Directory to scan for components")
+		output  = flag.String("output", "wire/wire_gen.go", "Output file for generated code")
+		verbose = flag.Bool("verbose", false, "Enable verbose logging")
 	)
 	flag.Parse()
 
@@ -30,12 +31,14 @@ func main() {
 		log.Fatalf("Error parsing components: %v", err)
 	}
 
-	log.Printf("Found %d components", len(components))
-	for _, comp := range components {
-		log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
-		log.Printf("- Qualifier: %s", comp.Qualifier)
-		log.Printf("- Implements: %v", comp.Implements)
-		log.Printf("- Dependencies: %v", comp.Dependencies)
+	if *verbose {
+		log.Printf("Found %d components", len(components))
+		for _, comp := range components {
+			log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
+			log.Printf("- Qualifier: %s", comp.Qualifier)
+			log.Printf("- Implements: %v", comp.Implements)
+			log.Printf("- Dependencies: %v", comp.Dependencies)
+		}
 	}
 
 	// Generate code
@@ -44,5 +47,5 @@ func main() {
 		log.Fatalf("Error generating code: %v", err)
 	}
 
-	log.Printf("Successfully generated wire file: %s", *output)
+	log.Printf("Successfully generated wire file: %s/%s", absDir, *output)
 }

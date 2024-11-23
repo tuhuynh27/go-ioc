@@ -85,7 +85,7 @@ import (
     "{{.}}"{{end}}
 )
 
-func InitializeContainer() (*ioc.Container, error) {
+func InitializeContainer() *ioc.Container {
     container := ioc.NewContainer()
     {{range $comp := .Components}}
     // Initialize {{$comp.Type}}
@@ -99,7 +99,7 @@ func InitializeContainer() (*ioc.Container, error) {
     container.RegisterWithInterface("{{.Interface}}", "{{.Qualifier}}", {{$comp.VarName}})
     {{- end}}
     {{end}}
-    return container, nil
+    return container
 }
 `)
 	if err != nil {
