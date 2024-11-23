@@ -133,16 +133,14 @@ func ParseComponents(rootDir string) ([]Component, error) {
 					hasComponent := false
 					for _, field := range structType.Fields.List {
 						// Check if field is the IoC Component marker
-						if sel, ok := field.Type.(*ast.SelectorExpr); ok {
-							if ident, ok := sel.X.(*ast.Ident); ok {
-								if ident.Name == "ioc" && sel.Sel.Name == "Component" {
-									hasComponent = true
-									// Check for name override in tag
-									if field.Tag != nil {
-										tag := parseStructTag(field.Tag.Value)
-										if name, ok := tag["name"]; ok {
-											comp.Name = name
-										}
+						if len(field.Names) > 0 && field.Names[0].Name == "Component" {
+							if _, ok := field.Type.(*ast.StructType); ok {
+								hasComponent = true
+								// Check for name override in tag
+								if field.Tag != nil {
+									tag := parseStructTag(field.Tag.Value)
+									if name, ok := tag["name"]; ok {
+										comp.Name = name
 									}
 								}
 							}
