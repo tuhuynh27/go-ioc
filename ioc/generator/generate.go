@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 )
 
 type Generator struct {
@@ -48,6 +49,8 @@ func NewGenerator(components []Component) *Generator {
 }
 
 func (g *Generator) Generate(baseDir string) error {
+	startTime := time.Now()
+
 	if len(g.components) == 0 {
 		return fmt.Errorf("no components found")
 	}
@@ -146,7 +149,7 @@ func InitializeContainer() (*ioc.Container, error) {
 		return fmt.Errorf("failed to write generated code: %w", err)
 	}
 
-	log.Printf("Generated wire_gen.go in %s", wireDir)
+	log.Printf("Generated wire_gen.go in %s (completed in %v)", wireDir, time.Since(startTime))
 	return nil
 }
 
@@ -247,10 +250,7 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 }
 
 func (g *Generator) logDependencies(comp Component) {
-	log.Printf("Processing dependencies for component: %s", comp.Type)
-	for _, dep := range comp.Dependencies {
-		log.Printf("- Dependency: %s (%s) qualifier: %s", dep.FieldName, dep.Type, dep.Qualifier)
-	}
+	log.Printf("Processing component: %s", comp.Type)
 }
 
 // Helper function to check if a slice contains a string

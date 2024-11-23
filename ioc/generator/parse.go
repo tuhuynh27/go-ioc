@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Component struct {
@@ -58,6 +59,7 @@ func getModulePath(rootDir string) (string, error) {
 }
 
 func ParseComponents(rootDir string) ([]Component, error) {
+	startTime := time.Now()
 	var components []Component
 	fset := token.NewFileSet()
 
@@ -81,22 +83,14 @@ func ParseComponents(rootDir string) ([]Component, error) {
 			return filepath.SkipDir
 		}
 
-		log.Printf("Scanning directory: %s", path)
-
 		pkgs, err := parser.ParseDir(fset, path, nil, parser.ParseComments)
 		if err != nil {
 			log.Printf("Error parsing directory %s: %v", path, err)
 			return nil
 		}
 
-		log.Printf("Found %d packages in %s", len(pkgs), path)
-
-		for pkgName, pkg := range pkgs {
-			log.Printf("Processing package: %s", pkgName)
-
-			for fileName, file := range pkg.Files {
-				log.Printf("Processing file: %s", fileName)
-
+		for _, pkg := range pkgs {
+			for _, file := range pkg.Files {
 				ast.Inspect(file, func(n ast.Node) bool {
 					typeSpec, ok := n.(*ast.TypeSpec)
 					if !ok {
@@ -107,8 +101,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 					if !ok {
 						return true
 					}
-
-					log.Printf("Found struct: %s", typeSpec.Name.Name)
 
 					// Get relative package path from root directory
 					relPath, err := filepath.Rel(rootDir, path)
@@ -133,7 +125,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 						// Check for Component field
 						if ident, ok := field.Type.(*ast.Ident); ok && ident.Name == "Component" {
 							hasComponent = true
-							log.Printf("Found Component field in %s", comp.Name)
 							if field.Tag != nil {
 								tag := parseStructTag(field.Tag.Value)
 								if name, ok := tag["name"]; ok {
@@ -142,7 +133,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 							}
 						} else if sel, ok := field.Type.(*ast.SelectorExpr); ok && sel.Sel.Name == "Component" {
 							hasComponent = true
-							log.Printf("Found Component field in %s", comp.Name)
 							if field.Tag != nil {
 								tag := parseStructTag(field.Tag.Value)
 								if name, ok := tag["name"]; ok {
@@ -156,7 +146,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 							tag := parseStructTag(field.Tag.Value)
 							if value, ok := tag["value"]; ok {
 								comp.Qualifier = value
-								log.Printf("Found Qualifier: %s", value)
 							}
 						}
 
@@ -169,7 +158,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 									impl = strings.ReplaceAll(impl, string(filepath.Separator), "/")
 								}
 								comp.Implements = append(comp.Implements, impl)
-								log.Printf("Found implements: %s", impl)
 							}
 						}
 
@@ -209,7 +197,6 @@ func ParseComponents(rootDir string) ([]Component, error) {
 					}
 
 					if hasComponent {
-						log.Printf("Adding component: %+v", comp)
 						components = append(components, comp)
 					}
 
@@ -225,15 +212,7 @@ func ParseComponents(rootDir string) ([]Component, error) {
 		return nil, err
 	}
 
-	log.Printf("Total components found: %d", len(components))
-	for _, comp := range components {
-		log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
-		log.Printf("- Qualifier: %s", comp.Qualifier)
-		log.Printf("- Implements: %v", comp.Implements)
-		for _, dep := range comp.Dependencies {
-			log.Printf("- Dependency: %s (%s) qualifier: %s", dep.FieldName, dep.Type, dep.Qualifier)
-		}
-	}
+	log.Printf("Found %d components (scan completed in %v)", len(components), time.Since(startTime))
 
 	return components, nil
 }
