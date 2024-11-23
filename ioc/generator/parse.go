@@ -183,16 +183,26 @@ func ParseComponents(rootDir string) ([]Component, error) {
 								}
 
 								// Get the type name and package
+								var typ string
 								switch t := field.Type.(type) {
 								case *ast.Ident:
-									dep.Type = t.Name
+									typ = t.Name
+								case *ast.StarExpr:
+									switch x := t.X.(type) {
+									case *ast.Ident:
+										typ = x.Name
+									case *ast.SelectorExpr:
+										if y, ok := x.X.(*ast.Ident); ok {
+											typ = y.Name + "." + x.Sel.Name
+										}
+									}
 								case *ast.SelectorExpr:
 									if x, ok := t.X.(*ast.Ident); ok {
-										dep.Type = x.Name + "." + t.Sel.Name
+										typ = x.Name + "." + t.Sel.Name
 									}
 								}
+								dep.Type = typ
 
-								log.Printf("Found dependency: %+v", dep)
 								comp.Dependencies = append(comp.Dependencies, dep)
 							}
 						}
