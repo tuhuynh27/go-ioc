@@ -26,44 +26,23 @@ func TestComponent_Marker(t *testing.T) {
 	})
 }
 
-func TestQualifier_Value(t *testing.T) {
-	tests := []struct {
-		name     string
-		value    string
-		expected string
-	}{
-		{"empty qualifier", "", ""},
-		{"email qualifier", "email", "email"},
-		{"sms qualifier", "sms", "sms"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			q := Qualifier{Value: tt.value}
-			if q.Value != tt.expected {
-				t.Errorf("Qualifier.Value = %v, want %v", q.Value, tt.expected)
-			}
-		})
-	}
-}
-
-func TestQualifier_Embedding(t *testing.T) {
-	// Test that Qualifier can be embedded in a struct with a value
+func TestQualifier_Tag(t *testing.T) {
+	// Test that Qualifier can be used as a field with struct tag
 	type TestService struct {
 		Component
-		Qualifier `value:"test"`
+		Qualifier struct{} `value:"test"`
 	}
 
 	service := TestService{}
 
-	t.Run("qualifier embedding", func(t *testing.T) {
+	t.Run("qualifier tag", func(t *testing.T) {
 		typ := reflect.TypeOf(service)
 		field, exists := typ.FieldByName("Qualifier")
 		if !exists {
 			t.Error("Qualifier field not found in struct")
 		}
-		if field.Type != reflect.TypeOf(Qualifier{}) {
-			t.Error("Embedded field is not of type Qualifier")
+		if field.Type != reflect.TypeOf(struct{}{}) {
+			t.Error("Qualifier field is not of type struct{}")
 		}
 
 		// Check if the struct tag is present
@@ -78,8 +57,9 @@ func TestComponent_And_Qualifier_Together(t *testing.T) {
 	// Test both Component and Qualifier together
 	type TestService struct {
 		Component
-		Qualifier `value:"test"`
-		Name      string
+		Qualifier  struct{} `value:"test"`
+		Implements struct{} `implements:"Service"`
+		Name       string
 	}
 
 	service := TestService{Name: "test-service"}
@@ -103,6 +83,16 @@ func TestComponent_And_Qualifier_Together(t *testing.T) {
 		tag := qualifierField.Tag.Get("value")
 		if tag != "test" {
 			t.Errorf("Qualifier tag = %v, want %v", tag, "test")
+		}
+
+		// Check Implements tag
+		implementsField, hasImplements := typ.FieldByName("Implements")
+		if !hasImplements {
+			t.Error("Implements field not found")
+		}
+		implementsTag := implementsField.Tag.Get("implements")
+		if implementsTag != "Service" {
+			t.Errorf("Implements tag = %v, want %v", implementsTag, "Service")
 		}
 
 		// Check that regular fields are still accessible

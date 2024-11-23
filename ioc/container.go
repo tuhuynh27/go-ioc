@@ -2,7 +2,6 @@
 package ioc
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -34,71 +33,49 @@ func (c *Container) RegisterWithInterface(interfaceName string, qualifier string
 }
 
 // Get retrieves a component by name from the container
-// If multiple components match the short name, returns an error
-func (c *Container) Get(name string) (interface{}, error) {
+func (c *Container) Get(name string) interface{} {
 	// If the name contains full path, use direct lookup
 	if component, exists := c.components[name]; exists {
-		return component, nil
+		return component
 	}
 
 	// Search for components matching the short name
-	var matches []string
 	var matchedComponent interface{}
 
 	for fullPath, component := range c.components {
 		parts := strings.Split(fullPath, ".")
 		shortName := parts[len(parts)-1]
 		if shortName == name {
-			matches = append(matches, fullPath)
 			matchedComponent = component
+			break
 		}
 	}
 
-	switch len(matches) {
-	case 0:
-		return nil, fmt.Errorf("no component found with name: %s", name)
-	case 1:
-		return matchedComponent, nil
-	default:
-		return nil, fmt.Errorf("multiple components found with name %s: %v", name, matches)
-	}
+	return matchedComponent
 }
 
 // GetQualified retrieves a specific implementation of an interface using a qualifier
-// If multiple interfaces match the short name, returns an error
-func (c *Container) GetQualified(interfaceName, qualifier string) (interface{}, error) {
+func (c *Container) GetQualified(interfaceName, qualifier string) interface{} {
 	// If the interface name contains full path, use direct lookup
 	if impls, exists := c.interfaces[interfaceName]; exists {
 		if component, exists := impls[qualifier]; exists {
-			return component, nil
+			return component
 		}
-		return nil, fmt.Errorf("no component found for interface %s with qualifier %s", interfaceName, qualifier)
+		return nil
 	}
 
 	// Search for interfaces matching the short name
-	var matches []string
 	var matchedComponent interface{}
 
 	for fullPath, impls := range c.interfaces {
 		parts := strings.Split(fullPath, ".")
 		shortName := parts[len(parts)-1]
 		if shortName == interfaceName {
-			matches = append(matches, fullPath)
 			if component, exists := impls[qualifier]; exists {
 				matchedComponent = component
 			}
 		}
 	}
 
-	switch len(matches) {
-	case 0:
-		return nil, fmt.Errorf("no interface found with name: %s", interfaceName)
-	case 1:
-		if matchedComponent == nil {
-			return nil, fmt.Errorf("no component found for interface %s with qualifier %s", matches[0], qualifier)
-		}
-		return matchedComponent, nil
-	default:
-		return nil, fmt.Errorf("multiple interfaces found with name %s: %v", interfaceName, matches)
-	}
+	return matchedComponent
 }
