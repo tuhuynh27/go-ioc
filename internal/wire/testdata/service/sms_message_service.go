@@ -6,8 +6,7 @@ import (
 )
 
 type SMSMessageService struct {
-	Component  struct{}
-	Implements struct{}           `implements:"MessageService"`
+	Component  struct{}           `implements:"MessageService"`
 	Qualifier  struct{}           `value:"sms"`
 	ConfigData *config.ConfigData `autowired:"true"`
 	Logger     logger.Logger      `autowired:"true" qualifier:"console"`

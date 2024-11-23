@@ -6,8 +6,7 @@ import (
 )
 
 type EmailMessageService struct {
-	Component  struct{}
-	Implements struct{}           `implements:"MessageService"`
+	Component  struct{}           `implements:"MessageService"`
 	Qualifier  struct{}           `value:"email"`
 	ConfigData *config.ConfigData `autowired:"true"`
 	Logger     logger.Logger      `autowired:"true" qualifier:"console"`

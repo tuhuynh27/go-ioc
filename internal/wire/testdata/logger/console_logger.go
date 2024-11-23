@@ -5,9 +5,8 @@ import (
 )
 
 type ConsoleLogger struct {
-	Component  struct{}
-	Qualifier  struct{} `value:"console"`
-	Implements struct{} `implements:"Logger"`
+	Component struct{} `implements:"Logger"`
+	Qualifier struct{} `value:"console"`
 }
 
 func (l *ConsoleLogger) Info(message string) {

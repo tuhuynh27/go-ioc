@@ -14,8 +14,7 @@ type MessageService interface {
 }
 
 type EmailService struct {
-    Component struct{}
-    Implements struct{} `implements:"MessageService"`
+    Component struct{} `implements:"MessageService"`
     Qualifier struct{} `value:"email"`
 }
 
@@ -30,8 +29,7 @@ Create mock implementations using the same struct tags:
 
 ```go:message/mock_service.go
 type MockMessageService struct {
-    Component struct{}
-    Implements struct{} `implements:"MessageService"`
+    Component struct{} `implements:"MessageService"`
     Qualifier struct{} `value:"mock"`
     
     // Add fields to track calls
@@ -165,8 +163,7 @@ When testing components with external dependencies (like databases or APIs), you
 
 ```go:repository/mock_repository.go
 type MockUserRepository struct {
-    Component struct{}
-    Implements struct{} `implements:"UserRepository"`
+    Component struct{} `implements:"UserRepository"`
     Qualifier struct{} `value:"mock"`
     
     Users map[string]User

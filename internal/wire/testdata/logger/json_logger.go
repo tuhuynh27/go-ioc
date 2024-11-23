@@ -5,9 +5,8 @@ import (
 )
 
 type JsonLogger struct {
-	Component  struct{}
-	Qualifier  struct{} `value:"json"`
-	Implements struct{} `implements:"Logger"`
+	Component struct{} `implements:"Logger"`
+	Qualifier struct{} `value:"json"`
 }
 
 func (l *JsonLogger) Info(message string) {

@@ -150,8 +150,15 @@ func ParseComponents(rootDir string) ([]Component, error) {
 						if field.Tag != nil {
 							tag := parseStructTag(field.Tag.Value)
 
-							// Check for qualifier value
-							if value, ok := tag["value"]; ok {
+							// Check if this field has a "value" tag and is a Qualifier field
+							value, hasValue := tag["value"]
+							isQualifierField := len(field.Names) > 0 && field.Names[0].Name == "Qualifier"
+							isEmptyStruct := false
+							if _, ok := field.Type.(*ast.StructType); ok {
+								isEmptyStruct = true
+							}
+
+							if hasValue && isQualifierField && isEmptyStruct {
 								comp.Qualifier = value
 							}
 

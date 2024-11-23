@@ -80,7 +80,7 @@ package notification
 type NotificationService struct {
     Component struct{}
     EmailSender message.MessageService `autowired:"true" qualifier:"email"` // <- This is like a "@Autowired" annotation
-    SmsSender   message.MessageService `autowired:"true" qualifier:"sms"` // <- This is like a "@Autowired" annotation
+    SmsSender   message.MessageService `autowired:"true" qualifier:"sms"` // <- It also support "@Qualifier" annotation
 }
 
 func (s *NotificationService) SendNotifications(msg string) {
