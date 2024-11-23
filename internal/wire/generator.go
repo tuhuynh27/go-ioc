@@ -93,30 +93,27 @@ import ({{range .Imports}}
     "{{.}}"{{end}}
 )
 
-// Application holds all the wired components
-type Application struct {
+type Container struct {
     {{- range $comp := .Components}}
     {{$comp.VarName}} *{{$comp.Package | base}}.{{$comp.Type}}
     {{- end}}
 }
 
-// Initialize creates and wires all components
-func Initialize() *Application {
-    app := &Application{}
+func Initialize() *Container {
+    container := &Container{}
     {{- range $comp := .Components}}
-    app.{{$comp.VarName}} = &{{$comp.Package | base}}.{{$comp.Type}}{
+    container.{{$comp.VarName}} = &{{$comp.Package | base}}.{{$comp.Type}}{
         {{- range $dep := $comp.Dependencies}}
-        {{$dep.FieldName}}: app.{{$dep.VarName}},
+        {{$dep.FieldName}}: container.{{$dep.VarName}},
         {{- end}}
     }
     {{- end}}
-    return app
+    return container
 }
 
 {{- range $comp := .Components}}
-// Get{{$comp.Type}} returns the {{$comp.Type}} instance
-func (app *Application) Get{{$comp.Type}}() *{{$comp.Package | base}}.{{$comp.Type}} {
-    return app.{{$comp.VarName}}
+func (c *Container) Get{{$comp.Type}}() *{{$comp.Package | base}}.{{$comp.Type}} {
+    return c.{{$comp.VarName}}
 }
 {{- end}}
 `)

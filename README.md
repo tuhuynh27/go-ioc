@@ -115,44 +115,42 @@ import (
     "your/project/config"
 )
 
-// Application holds all the wired components
-type Application struct {
+type Container struct {
     emailService      *message.EmailService
     smsService       *message.SmsService
     notificationService *notification.NotificationService
 }
 
-// Initialize creates and wires all components
-func Initialize() *Application {
-    app := &Application{}
+func Initialize() *Container {
+    container := &Container{}
     
-    app.emailService = &message.EmailService{
+    container.emailService = &message.EmailService{
     }
     
-    app.smsService = &message.SmsService{
+    container.smsService = &message.SmsService{
     }
     
-    app.notificationService = &notification.NotificationService{
-        EmailSender: app.emailService,
-        SmsSender:   app.smsService,
+    container.notificationService = &notification.NotificationService{
+        EmailSender: container.emailService,
+        SmsSender:   container.smsService,
     }
     
-    return app
+    return container
 }
 
 // GetEmailService returns the EmailService instance
-func (app *Application) GetEmailService() *message.EmailService {
-    return app.emailService
+func (c *Container) GetEmailService() *message.EmailService {
+    return c.emailService
 }
 
 // GetSmsService returns the SmsService instance
-func (app *Application) GetSmsService() *message.SmsService {
-    return app.smsService
+func (c *Container) GetSmsService() *message.SmsService {
+    return c.smsService
 }
 
 // GetNotificationService returns the NotificationService instance
-func (app *Application) GetNotificationService() *notification.NotificationService {
-    return app.notificationService
+func (c *Container) GetNotificationService() *notification.NotificationService {
+    return c.notificationService
 }
 ```
 
@@ -169,10 +167,10 @@ import (
 )
 
 func main() {
-    app := wire.Initialize()
+    container := wire.Initialize()
     
     // Get the service you need
-    notificationService := app.GetNotificationService()
+    notificationService := container.GetNotificationService()
     
     // Use it
     notificationService.SendNotifications("Hello World!")
