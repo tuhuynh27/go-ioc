@@ -101,7 +101,7 @@ type Logger interface {
 }
 
 type StdoutLogger struct {
-    ioc.Component ` + "`implements:\"example.com/test/logger.Logger\"`" + `
+    Component struct{} ` + "`implements:\"example.com/test/logger.Logger\"`" + `
 }
 
 func (l *StdoutLogger) Log(message string) {
@@ -128,7 +128,7 @@ import (
 )
 
 type EmailService struct {
-    ioc.Component
+    Component struct{}
     Logger logger.Logger ` + "`autowired:\"\"`" + `
 }
 
