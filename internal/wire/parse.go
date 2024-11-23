@@ -1,5 +1,4 @@
-// Package generator provides functionality for parsing and generating IoC container code
-package generator
+package wire
 
 import (
 	"bufio"

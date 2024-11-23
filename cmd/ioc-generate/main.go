@@ -5,7 +5,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/tuhuynh27/go-ioc/ioc/generator"
+	"github.com/tuhuynh27/go-ioc/internal/wire"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	log.Printf("Scanning directory: %s", absDir)
 
 	// Parse components
-	components, err := generator.ParseComponents(absDir)
+	components, err := wire.ParseComponents(absDir)
 
 	if err != nil {
 		log.Fatalf("Error parsing components: %v", err)
@@ -42,7 +42,7 @@ func main() {
 	}
 
 	// Generate code
-	gen := generator.NewGenerator(components)
+	gen := wire.NewGenerator(components)
 	if err := gen.Generate(absDir); err != nil {
 		log.Fatalf("Error generating code: %v", err)
 	}
