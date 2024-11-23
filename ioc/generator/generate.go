@@ -80,28 +80,36 @@ func (g *Generator) Generate(baseDir string) error {
 //go:generate go run github.com/tuhuynh27/go-ioc/cmd/generate -dir=../
 package wire
 
-import (
-    "github.com/tuhuynh27/go-ioc/ioc"{{range .Imports}}
+import ({{range .Imports}}
     "{{.}}"{{end}}
 )
 
-func InitializeContainer() *ioc.Container {
-    container := ioc.NewContainer()
-    {{range $comp := .Components}}
-    // Initialize {{$comp.Type}}
-    {{$comp.VarName}} := &{{$comp.Package | base}}.{{$comp.Type}}{
+// Application holds all the wired components
+type Application struct {
+    {{- range $comp := .Components}}
+    {{$comp.VarName}} *{{$comp.Package | base}}.{{$comp.Type}}
+    {{- end}}
+}
+
+// Initialize creates and wires all components
+func Initialize() *Application {
+    app := &Application{}
+    {{- range $comp := .Components}}
+    app.{{$comp.VarName}} = &{{$comp.Package | base}}.{{$comp.Type}}{
         {{- range $dep := $comp.Dependencies}}
-        {{$dep.FieldName}}: {{$dep.VarName}},
+        {{$dep.FieldName}}: app.{{$dep.VarName}},
         {{- end}}
     }
-    container.Register("{{$comp.Package}}.{{$comp.Type}}", {{$comp.VarName}})
-    {{- range $comp.Interfaces}}
-    container.RegisterWithInterface("{{.Interface}}", "{{.Qualifier}}", {{$comp.VarName}})
     {{- end}}
-    {{end}}
-    return container
+    return app
 }
-`)
+
+{{- range $comp := .Components}}
+// Get{{$comp.Type}} returns the {{$comp.Type}} instance
+func (app *Application) Get{{$comp.Type}}() *{{$comp.Package | base}}.{{$comp.Type}} {
+    return app.{{$comp.VarName}}
+}
+{{- end}}`)
 	if err != nil {
 		return fmt.Errorf("template parsing failed: %w", err)
 	}

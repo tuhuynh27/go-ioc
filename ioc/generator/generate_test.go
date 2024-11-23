@@ -77,19 +77,30 @@ func TestGenerator_Generate(t *testing.T) {
 	}
 
 	for _, imp := range expectedImports {
-		if !contains(strings.Split(contentStr, "\n"), `"`+imp+`"`) {
+		if !strings.Contains(contentStr, `"`+imp+`"`) {
 			t.Errorf("Expected import %s not found", imp)
 		}
 	}
 
-	// Check for interface registration
-	expectedRegistrations := []string{
-		`container.RegisterWithInterface("github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/logger.Logger", "stdout", stdoutLogger)`,
+	// Check for Application struct
+	if !strings.Contains(contentStr, "type Application struct {") {
+		t.Error("Application struct not found in generated code")
 	}
 
-	for _, reg := range expectedRegistrations {
-		if !strings.Contains(contentStr, reg) {
-			t.Errorf("Expected interface registration not found: %s", reg)
+	// Check for Initialize function
+	if !strings.Contains(contentStr, "func Initialize() *Application {") {
+		t.Error("Initialize function not found in generated code")
+	}
+
+	// Check for getter methods
+	expectedGetters := []string{
+		"func (app *Application) GetStdoutLogger() *logger.StdoutLogger {",
+		"func (app *Application) GetEmailService() *message.EmailService {",
+	}
+
+	for _, getter := range expectedGetters {
+		if !strings.Contains(contentStr, getter) {
+			t.Errorf("Expected getter not found: %s", getter)
 		}
 	}
 }
@@ -127,19 +138,6 @@ func TestGenerator_GenerateComponentInits(t *testing.T) {
 	// Check first component (StdoutLogger)
 	if inits[0].Type != "StdoutLogger" {
 		t.Errorf("Expected StdoutLogger, got %s", inits[0].Type)
-	}
-
-	// Check interface registration for StdoutLogger
-	if len(inits[0].Interfaces) != 1 {
-		t.Errorf("Expected 1 interface registration for StdoutLogger, got %d", len(inits[0].Interfaces))
-	}
-
-	if inits[0].Interfaces[0].Interface != "logger.Logger" {
-		t.Errorf("Expected logger.Logger interface, got %s", inits[0].Interfaces[0].Interface)
-	}
-
-	if inits[0].Interfaces[0].Qualifier != "stdout" {
-		t.Errorf("Expected stdout qualifier, got %s", inits[0].Interfaces[0].Qualifier)
 	}
 
 	// Check second component (EmailService)
