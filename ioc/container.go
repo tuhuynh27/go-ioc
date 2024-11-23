@@ -25,7 +25,7 @@ func (c *Container) Register(name string, component interface{}) {
 	c.components[name] = component
 }
 
-// RegisterInterface registers a component as an implementation of an interface
+// RegisterWithInterface registers a component as an implementation of an interface
 func (c *Container) RegisterWithInterface(interfaceName string, qualifier string, component interface{}) {
 	if c.interfaces[interfaceName] == nil {
 		c.interfaces[interfaceName] = make(map[string]interface{})
