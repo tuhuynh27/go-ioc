@@ -159,6 +159,7 @@ func (app *Application) Get{{$comp.Type}}() *{{$comp.Package | base}}.{{$comp.Ty
 	}
 
 	log.Printf("Generated wire_gen.go in %s (completed in %v)", wireDir, time.Since(startTime))
+
 	return nil
 }
 

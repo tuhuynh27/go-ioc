@@ -20,10 +20,8 @@ func TestIntegration(t *testing.T) {
 
 	// Create go.mod file
 	goModContent := `module github.com/tuhuynh27/go-ioc/internal/wire/testdata
+	
 go 1.20
-
-require github.com/tuhuynh27/go-ioc v0.0.0
-replace github.com/tuhuynh27/go-ioc => ../../../..
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644); err != nil {
 		t.Fatalf("Failed to create go.mod: %v", err)
@@ -41,17 +39,16 @@ replace github.com/tuhuynh27/go-ioc => ../../../..
 		t.Fatalf("Failed to parse components: %v", err)
 	}
 
-	// Verify components were found
-	expectedComponents := 10
+	// Update expected component count
+	expectedComponents := 6 // Updated for: EmailMessageService, SMSMessageService, NotificationService, MessageService interface, ConsoleLogger, JsonLogger
 	if len(components) != expectedComponents {
 		t.Errorf("Expected %d components, got %d", expectedComponents, len(components))
-		// Print found components for debugging
 		for _, comp := range components {
 			t.Logf("Found component: %s (package: %s)", comp.Type, comp.Package)
 		}
 	}
 
-	// Verify loggers
+	// Verify components were found
 	var consoleLogger, jsonLogger bool
 	for _, comp := range components {
 		switch comp.Type {
@@ -81,105 +78,80 @@ replace github.com/tuhuynh27/go-ioc => ../../../..
 		t.Error("JsonLogger component not found")
 	}
 
-	// Verify NotificationService dependencies
+	// Verify Message Services
+	var emailService, smsService bool
+	for _, comp := range components {
+		switch comp.Type {
+		case "EmailMessageService":
+			emailService = true
+			if comp.Qualifier != "email" {
+				t.Errorf("Expected email qualifier for EmailMessageService, got %s", comp.Qualifier)
+			}
+			if !contains(comp.Implements, "MessageService") {
+				t.Error("EmailMessageService should implement MessageService interface")
+			}
+			// Verify dependencies
+			if len(comp.Dependencies) != 2 { // ConfigData and Logger
+				t.Errorf("Expected 2 dependencies for EmailMessageService, got %d", len(comp.Dependencies))
+			}
+		case "SMSMessageService":
+			smsService = true
+			if comp.Qualifier != "sms" {
+				t.Errorf("Expected sms qualifier for SMSMessageService, got %s", comp.Qualifier)
+			}
+			if !contains(comp.Implements, "MessageService") {
+				t.Error("SMSMessageService should implement MessageService interface")
+			}
+			// Verify dependencies
+			if len(comp.Dependencies) != 2 { // ConfigData and Logger
+				t.Errorf("Expected 2 dependencies for SMSMessageService, got %d", len(comp.Dependencies))
+			}
+		}
+	}
+
+	if !emailService {
+		t.Error("EmailMessageService component not found")
+	}
+	if !smsService {
+		t.Error("SMSMessageService component not found")
+	}
+
+	// Verify NotificationService
 	var notificationService bool
 	for _, comp := range components {
 		if comp.Type == "NotificationService" {
 			notificationService = true
-			if len(comp.Dependencies) != 3 {
+			if len(comp.Dependencies) != 3 { // EmailSender, SmsSender, and Logger
 				t.Errorf("Expected 3 dependencies for NotificationService, got %d", len(comp.Dependencies))
 			}
 
-			var hasConsole, hasJson, hasConfig bool
+			// Verify specific dependencies
+			var hasEmailSender, hasSmsSender, hasLogger bool
 			for _, dep := range comp.Dependencies {
 				switch {
-				case dep.Type == "logger.Logger" && dep.Qualifier == "console":
-					hasConsole = true
+				case dep.Type == "service.MessageService" && dep.Qualifier == "email":
+					hasEmailSender = true
+				case dep.Type == "service.MessageService" && dep.Qualifier == "sms":
+					hasSmsSender = true
 				case dep.Type == "logger.Logger" && dep.Qualifier == "json":
-					hasJson = true
-				case dep.Type == "config.NotificationConfigData":
-					hasConfig = true
+					hasLogger = true
 				}
 			}
 
-			if !hasConsole {
-				t.Error("NotificationService missing console logger dependency")
+			if !hasEmailSender {
+				t.Error("NotificationService missing EmailMessageService dependency")
 			}
-			if !hasJson {
+			if !hasSmsSender {
+				t.Error("NotificationService missing SMSMessageService dependency")
+			}
+			if !hasLogger {
 				t.Error("NotificationService missing json logger dependency")
-			}
-			if !hasConfig {
-				t.Error("NotificationService missing config dependency")
 			}
 		}
 	}
 
 	if !notificationService {
 		t.Error("NotificationService component not found")
-	}
-
-	// Verify UserService nested dependency
-	var userService bool
-	for _, comp := range components {
-		if comp.Type == "UserService" {
-			userService = true
-			if len(comp.Dependencies) != 1 {
-				t.Errorf("Expected 1 dependency for UserService, got %d", len(comp.Dependencies))
-			}
-			if comp.Dependencies[0].Type != "NotificationService" {
-				t.Errorf("Expected NotificationService dependency, got %s", comp.Dependencies[0].Type)
-			}
-		}
-	}
-
-	if !userService {
-		t.Error("UserService component not found")
-	}
-
-	// Verify config components
-	var dbConfig, notifyConfig bool
-	for _, comp := range components {
-		switch comp.Type {
-		case "DatabaseConfigData":
-			dbConfig = true
-		case "NotificationConfigData":
-			notifyConfig = true
-		}
-	}
-
-	if !dbConfig {
-		t.Error("DatabaseConfigData component not found")
-	}
-	if !notifyConfig {
-		t.Error("NotificationConfigData component not found")
-	}
-
-	// Verify components that depend on configs
-	for _, comp := range components {
-		switch comp.Type {
-		case "UserRepository":
-			found := false
-			for _, dep := range comp.Dependencies {
-				if dep.Type == "config.DatabaseConfigData" {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Error("UserRepository missing DatabaseConfigData dependency")
-			}
-		case "NotificationService":
-			found := false
-			for _, dep := range comp.Dependencies {
-				if dep.Type == "config.NotificationConfigData" {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Error("NotificationService missing NotificationConfigData dependency")
-			}
-		}
 	}
 
 	// Generate wire code
@@ -205,87 +177,45 @@ func contains(slice []string, str string) bool {
 }
 
 func copyTestFiles(src, dst string) error {
-	// Create logger package directory
-	loggerDir := filepath.Join(dst, "logger")
-	if err := os.MkdirAll(loggerDir, 0755); err != nil {
-		return fmt.Errorf("failed to create logger directory: %w", err)
+	// Create package directories
+	dirs := []string{
+		filepath.Join(dst, "logger"),
+		filepath.Join(dst, "service"),
+		filepath.Join(dst, "config"),
 	}
 
-	// Create service package directory
-	serviceDir := filepath.Join(dst, "service")
-	if err := os.MkdirAll(serviceDir, 0755); err != nil {
-		return fmt.Errorf("failed to create service directory: %w", err)
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
 	}
 
-	// Create additional package directories
-	configDir := filepath.Join(dst, "config")
-	cacheDir := filepath.Join(dst, "cache")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
-	}
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	// Create repository package directory
-	repoDir := filepath.Join(dst, "repository")
-	if err := os.MkdirAll(repoDir, 0755); err != nil {
-		return fmt.Errorf("failed to create repository directory: %w", err)
-	}
-
-	// Get the absolute path of the source directory
+	// Get absolute path of source directory
 	srcAbs, err := filepath.Abs(".")
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	// Copy logger package files
-	loggerFiles := []string{"logger.go", "console_logger.go", "json_logger.go"}
-	for _, file := range loggerFiles {
-		srcPath := filepath.Join(srcAbs, "logger", file)
-		dstPath := filepath.Join(loggerDir, file)
-		if err := copyFile(srcPath, dstPath); err != nil {
-			return fmt.Errorf("failed to copy logger file %s: %w", file, err)
-		}
+	// Define files to copy for each package
+	filesToCopy := map[string][]string{
+		"logger": {"logger.go", "console_logger.go", "json_logger.go"},
+		"service": {
+			"message_service.go",
+			"notification_service.go",
+			"email_message_service.go",
+			"sms_message_service.go",
+		},
+		"config": {"config.go"},
 	}
 
-	// Copy service package files
-	serviceFiles := []string{"notification_service.go", "user_service.go", "user_service_enhanced.go"}
-	for _, file := range serviceFiles {
-		srcPath := filepath.Join(srcAbs, "service", file)
-		dstPath := filepath.Join(serviceDir, file)
-		if err := copyFile(srcPath, dstPath); err != nil {
-			return fmt.Errorf("failed to copy service file %s: %w", file, err)
-		}
-	}
-
-	// Copy config files
-	configFiles := []string{"database_config.go", "notification_config.go"}
-	for _, file := range configFiles {
-		srcPath := filepath.Join(srcAbs, "config", file)
-		dstPath := filepath.Join(configDir, file)
-		if err := copyFile(srcPath, dstPath); err != nil {
-			return fmt.Errorf("failed to copy config file %s: %w", file, err)
-		}
-	}
-
-	// Copy cache files
-	cacheFiles := []string{"redis_cache.go", "memory_cache.go"}
-	for _, file := range cacheFiles {
-		srcPath := filepath.Join(srcAbs, "cache", file)
-		dstPath := filepath.Join(cacheDir, file)
-		if err := copyFile(srcPath, dstPath); err != nil {
-			return fmt.Errorf("failed to copy cache file %s: %w", file, err)
-		}
-	}
-
-	// Copy repository files
-	repoFiles := []string{"user_repository.go"}
-	for _, file := range repoFiles {
-		srcPath := filepath.Join(srcAbs, "repository", file)
-		dstPath := filepath.Join(repoDir, file)
-		if err := copyFile(srcPath, dstPath); err != nil {
-			return fmt.Errorf("failed to copy repository file %s: %w", file, err)
+	// Copy files
+	for pkg, files := range filesToCopy {
+		for _, file := range files {
+			srcPath := filepath.Join(srcAbs, pkg, file)
+			dstPath := filepath.Join(dst, pkg, file)
+			if err := copyFile(srcPath, dstPath); err != nil {
+				return fmt.Errorf("failed to copy %s file %s: %w", pkg, file, err)
+			}
 		}
 	}
 
