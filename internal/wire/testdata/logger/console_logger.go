@@ -16,3 +16,13 @@ func (l *ConsoleLogger) Info(message string) {
 func (l *ConsoleLogger) Error(message string) {
 	fmt.Println("[ERROR] ", message)
 }
+
+// New PostConstruct method
+func (l *ConsoleLogger) PostConstruct() {
+	fmt.Println("ConsoleLogger initialized")
+}
+
+// New PreDestroy method
+func (l *ConsoleLogger) PreDestroy() {
+	fmt.Println("ConsoleLogger is being destroyed")
+}

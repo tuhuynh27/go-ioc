@@ -60,6 +60,12 @@ go 1.20
 			if !contains(comp.Implements, "Logger") {
 				t.Error("ConsoleLogger should implement Logger interface")
 			}
+			if !comp.PostConstruct {
+				t.Error("ConsoleLogger should have PostConstruct method")
+			}
+			if !comp.PreDestroy {
+				t.Error("ConsoleLogger should have PreDestroy method")
+			}
 		case "JsonLogger":
 			jsonLogger = true
 			if comp.Qualifier != "json" {
@@ -67,6 +73,12 @@ go 1.20
 			}
 			if !contains(comp.Implements, "Logger") {
 				t.Error("JsonLogger should implement Logger interface")
+			}
+			if !comp.PostConstruct {
+				t.Error("JsonLogger should have PostConstruct method")
+			}
+			if !comp.PreDestroy {
+				t.Error("JsonLogger should have PreDestroy method")
 			}
 		}
 	}
