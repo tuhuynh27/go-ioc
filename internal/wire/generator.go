@@ -108,12 +108,12 @@ type Container struct {
     {{- end}}
 }
 
-
 func Initialize() (*Container, func()) {
     container := &Container{}{{range $comp := .Components}}
-    container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{ {{- range $dep := $comp.Dependencies}}
+    container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{{if $comp.Dependencies}}{
+        {{- range $dep := $comp.Dependencies}}
         {{$dep.FieldName}}: container.{{$dep.VarName}},{{- end}}
-    }{{if $comp.PostConstruct}}
+    }{{else}}{}{{end}}{{if $comp.PostConstruct}}
     container.{{$comp.Type}}.PostConstruct(){{- end}}{{end}}
 
     cleanup := func() {
