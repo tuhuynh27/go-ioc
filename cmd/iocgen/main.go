@@ -48,7 +48,6 @@ func main() {
 	}
 
 	if *verbose {
-		log.Printf("Found %d components", len(components))
 		for _, comp := range components {
 			log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
 			log.Printf("- Qualifier: %s", comp.Qualifier)
