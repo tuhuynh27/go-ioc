@@ -267,7 +267,13 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 					VarName:   depVarName,
 				})
 			} else {
-				log.Printf("Warning: Could not find component for dependency %s with qualifier %s", dep.Type, dep.Qualifier)
+				log.Printf("Warning: Could not resolve dependency '%s' with qualifier '%s' for component '%s.%s'. "+
+					"Please check: \n"+
+					"1. The dependency type exists and is marked with Component{} \n"+
+					"2. For interface dependencies, ensure an implementation is marked with Component{} \n"+
+					"3. If using qualifiers, verify the qualifier values match \n"+
+					"4. The package containing the dependency is included in component scanning",
+					dep.Type, dep.Qualifier, init.Package, init.Type)
 			}
 		}
 
