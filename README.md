@@ -33,11 +33,22 @@ For teams transitioning from Spring/Java to Go, especially those with significan
 
 ## How does it work?
 
-Go IoC uses code generation to:
+Go IoC uses code generation to create a dependency injection system in three simple steps:
 
-1. Scan struct tags at build time to identify components, interfaces, qualifiers dependencies and lifecycle hooks
-2. Generate type-safe dependency injection code that creates and wires components correctly
-3. Create initialization functions that handle all the wiring
+1. **Discovery**
+   - Scans your code to find components and their dependencies
+   - Identifies how components are connected through struct tags
+
+2. **Analysis**
+   - Figures out the correct order to create components
+   - Validates that all dependencies can be satisfied
+
+3. **Generation**
+   - Generate type-safe code that initializes all components
+   - Generate code to handle the component lifecycle (startup and cleanup)
+   - Produces a single generated file that wires everything together
+
+The result is a fast, type-safe dependency injection system with zero runtime reflection.
 
 ## Usage
 
@@ -139,7 +150,7 @@ func Initialize() (*Container, func()) {
 
 ### Using the Generated Code
 
-Use the generated Application struct in your code:
+Use the generated struct in your code:
 
 ```go
 // main.go
@@ -187,6 +198,5 @@ Please check the [example Git repository](https://github.com/tuhuynh27/go-ioc-gi
 ### What's the performance impact?
 
 None! Go IoC:
-- Uses pure compile-time code generation, without runtime state or reflection
-- Has zero runtime overhead
+- Uses pure compile-time code generation, without runtime state or reflection, so not runtime cost
 - Generates plain Go code that's as efficient as hand-written dependency injection
