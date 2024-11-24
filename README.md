@@ -7,10 +7,10 @@ Go IoC brings Spring-style autowiring to Go, offering a compile-time Inversion o
 While other DI solutions exist in Go ([Google's Wire](https://github.com/google/wire/tree/main), [Uber's Dig](https://github.com/uber-go/dig) or [Facebook's Inject](https://github.com/facebookarchive/inject)), Go IoC takes a unique approach by:
 
 - Providing a familiar Spring-like API that Java developers will recognize
-- Using code generation for compile-time safety (unlike Spring's runtime DI)
+- Using code generation for compile-time safety and zero runtime overhead (unlike Spring's runtime IoC)
 - Using struct tags and marker structs as clean "annotations" 
 - Supporting interface implementations and qualifiers elegantly
-- Enabling automatic component scanning via struct tags
+- Enabling automatic component scanning via struct marker
 - Supporting lifecycle hooks via PostConstruct and PreDestroy struct methods
 
 ## But why bring @Autowired to Go?
@@ -35,17 +35,19 @@ For teams transitioning from Spring/Java to Go, especially those with significan
 
 Go IoC uses code generation to:
 
-1. Scan struct tags at build time to identify components, interfaces, qualifiers and dependencies
+1. Scan struct tags at build time to identify components, interfaces, qualifiers dependencies and lifecycle hooks
 2. Generate type-safe dependency injection code that creates and wires components correctly
 3. Create initialization functions that handle all the wiring
 
 ## Usage
 
-To use Go IoC in your project, install the code generator:
+To use Go IoC in your project, install the GO IoC code generator:
 
 ```bash
 go install github.com/tuhuynh27/go-ioc/cmd/iocgen@latest
 ```
+
+Please ensure that `$GOPATH/bin` is added to your $PATH.
 
 ### Defining Components
 
@@ -122,7 +124,7 @@ type Container struct {
     NotificationService *notification.NotificationService
 }
 
-func Initialize() *Container {
+func Initialize() (*Container, func()) {
     container := &Container{}
     container.EmailService = &message.EmailService{}
     container.SmsService = &message.SmsService{}
@@ -130,7 +132,8 @@ func Initialize() *Container {
         EmailSender: container.EmailService,
         SmsSender:   container.SmsService,
     }
-    return container
+    cleanup := func() {}
+    return container, cleanup
 }
 ```
 
@@ -149,10 +152,8 @@ import (
 func main() {
     container, cleanup := wire.Initialize()
     defer cleanup()
-    
     // Get the service you need
     notificationService := container.NotificationService
-    
     // Use it
     notificationService.SendNotifications("Hello World!")
 }
@@ -161,7 +162,7 @@ func main() {
 ## Comparison with Other DI Libraries
 
 | Feature | Go IoC | Google Wire | Uber Dig | Facebook Inject |
-|---------|--------|-------------|-----------|-----------------|
+|---------|-------|-------------|-----------|-----------------|
 | Dependency Definition | Struct tags & marker structs | Function providers | Constructor functions | Struct tags |
 | Runtime Overhead | None | None | Reflection-based | Reflection-based |
 | Configuration Style | Spring-like annotations | Explicit provider functions | Constructor injection | Field tags |
@@ -170,7 +171,7 @@ func main() {
 | Learning Curve | Low (familiar to Spring devs) | Medium | Medium | Low |
 | Code Generation | Yes | Yes | No | No |
 | Compile-time Safety | Yes | Yes | Partial | No |
-| Auto Component Scanning | Yes (via struct tags) | No | No | No |
+| Auto Component Scanning | Yes | No | No | No |
 | Lifecycle Hooks | Yes | No | No | No |
 
 ## Test with Go IoC
@@ -179,14 +180,13 @@ Please check the [testing](docs/testing.md) guide for more information.
 
 ## Example
 
-Please check the example Git repository (example with Go Gin web framework) [here](https://github.com/tuhuynh27/go-ioc-gin-demo)
+Please check the [example Git repository](https://github.com/tuhuynh27/go-ioc-gin-demo) (example with Go Gin web framework)
 
 ## FAQ
 
 ### What's the performance impact?
 
 None! Go IoC:
-- Uses pure compile-time code generation
+- Uses pure compile-time code generation, without runtime state or reflection
 - Has zero runtime overhead
 - Generates plain Go code that's as efficient as hand-written dependency injection
-- No reflection, no runtime container
