@@ -271,3 +271,51 @@ func TestGenerator_GenerateWithLifecycleMethods(t *testing.T) {
 		t.Error("PreDestroy method call not found in generated code")
 	}
 }
+
+func TestGenerator_GenerateCyclicDependencies(t *testing.T) {
+	// Create temporary directory for test
+	tmpDir, err := os.MkdirTemp("", "ioc-test-cyclic-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Test components with cyclic dependencies
+	components := []Component{
+		{
+			Name:    "ServiceA",
+			Type:    "ServiceA",
+			Package: "github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/service",
+			Dependencies: []Dependency{
+				{
+					FieldName: "B",
+					Type:      "ServiceB",
+				},
+			},
+		},
+		{
+			Name:    "ServiceB",
+			Type:    "ServiceB",
+			Package: "github.com/tuhuynh27/go-ioc/examples/ioc-example-simple/service",
+			Dependencies: []Dependency{
+				{
+					FieldName: "A",
+					Type:      "ServiceA",
+				},
+			},
+		},
+	}
+
+	// Create generator
+	gen := NewGenerator(components)
+
+	// Expect panic due to cyclic dependencies
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic due to cyclic dependencies, but did not panic")
+		}
+	}()
+
+	// Attempt to generate code
+	gen.Generate(tmpDir) // This should trigger the panic
+}

@@ -16,6 +16,7 @@ import (
 type Generator struct {
 	components []Component     // List of all components to be wired
 	visited    map[string]bool // Tracks visited components during dependency resolution
+	cyclicMap  map[string]bool // Tracks cyclic dependencies
 }
 
 // templateData holds the data needed for code template generation
@@ -53,6 +54,7 @@ func NewGenerator(components []Component) *Generator {
 	return &Generator{
 		components: components,
 		visited:    make(map[string]bool),
+		cyclicMap:  make(map[string]bool),
 	}
 }
 
@@ -72,7 +74,7 @@ func (g *Generator) Generate(baseDir string) error {
 	}
 
 	// Sort components based on their dependencies
-	orderedComponents := g.orderComponentsByDependencies()
+	orderedComponents := g.topologicalSort()
 	// Generate initialization code for each component
 	inits := g.generateComponentInits(orderedComponents)
 
@@ -295,11 +297,6 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 	return inits
 }
 
-// logDependencies logs the dependencies being processed for debugging
-func (g *Generator) logDependencies(comp Component) {
-	log.Printf("Processing component: %s", comp.Type)
-}
-
 // contains checks if a slice contains a string (with suffix matching)
 func contains(slice []string, str string) bool {
 	for _, s := range slice {
@@ -310,31 +307,55 @@ func contains(slice []string, str string) bool {
 	return false
 }
 
-// orderComponentsByDependencies sorts components based on their dependencies
-func (g *Generator) orderComponentsByDependencies() []Component {
+// topologicalSort sorts components based on their dependencies
+func (g *Generator) topologicalSort() []Component {
 	var ordered []Component
-	g.visited = make(map[string]bool)
 
 	// First process components with no dependencies
 	for _, comp := range g.components {
 		if len(comp.Dependencies) == 0 && !g.visited[comp.Package+"."+comp.Type] {
-			g.dfsVisit(comp, &ordered)
+			g.dfs(comp, &ordered)
 		}
 	}
 
 	// Then process remaining components
 	for _, comp := range g.components {
 		if !g.visited[comp.Package+"."+comp.Type] {
-			g.dfsVisit(comp, &ordered)
+			g.dfs(comp, &ordered)
 		}
 	}
 
 	return ordered
 }
 
-// dfsVisit performs a depth-first search to order components by dependencies
-func (g *Generator) dfsVisit(comp Component, ordered *[]Component) {
-	g.visited[comp.Package+"."+comp.Type] = true
+// dfs performs a depth-first search to order components by dependencies
+func (g *Generator) dfs(comp Component, ordered *[]Component) {
+	componentKey := comp.Package + "." + comp.Type
+
+	if g.cyclicMap[componentKey] {
+		// Build the dependency cycle path
+		var cyclePath []string
+		for k := range g.cyclicMap {
+			cyclePath = append(cyclePath, k)
+		}
+		cyclePath = append(cyclePath, componentKey)
+
+		panic(fmt.Sprintf("Cyclic dependency detected!\n"+
+			"Component %s.%s depends on a component that eventually depends back on it.\n"+
+			"Dependency path: %s\n"+
+			"Please check these components and their dependencies to resolve the cycle.",
+			comp.Package, comp.Type,
+			strings.Join(cyclePath, " -> ")))
+	}
+
+	g.cyclicMap[componentKey] = true
+	defer delete(g.cyclicMap, componentKey)
+
+	if g.visited[componentKey] {
+		return
+	}
+
+	g.visited[componentKey] = true
 
 	// Process dependencies before the component itself
 	for _, dep := range comp.Dependencies {
@@ -348,10 +369,15 @@ func (g *Generator) dfsVisit(comp Component, ordered *[]Component) {
 				if strings.HasSuffix(other.Package, pkgName) {
 					// Check both direct type matches and interface implementations
 					if other.Type == typeName || contains(other.Implements, typeName) {
-						if !g.visited[other.Package+"."+other.Type] {
-							g.dfsVisit(other, ordered)
-						}
+						g.dfs(other, ordered)
 					}
+				}
+			}
+		} else {
+			// Handle direct type dependencies
+			for _, other := range g.components {
+				if other.Type == dep.Type {
+					g.dfs(other, ordered)
 				}
 			}
 		}
