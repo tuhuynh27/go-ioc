@@ -11,6 +11,7 @@ While other DI solutions exist in Go ([Google's Wire](https://github.com/google/
 - Using struct tags and marker structs as clean "annotations" 
 - Supporting interface implementations and qualifiers elegantly
 - Enabling automatic component scanning via struct tags
+- Supporting lifecycle hooks via PostConstruct and PreDestroy struct methods
 
 ## But why bring @Autowired to Go?
 
@@ -146,7 +147,8 @@ import (
 )
 
 func main() {
-    container := wire.Initialize()
+    container, cleanup := wire.Initialize()
+    defer cleanup()
     
     // Get the service you need
     notificationService := container.NotificationService
