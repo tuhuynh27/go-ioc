@@ -194,3 +194,76 @@ func TestParseStructTag(t *testing.T) {
 		})
 	}
 }
+
+func TestParseComponentsWithLifecycleMethods(t *testing.T) {
+	// Create temporary directory for test
+	tmpDir, err := os.MkdirTemp("", "ioc-test-lifecycle-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create go.mod file
+	goModContent := `module example.com/test
+go 1.20
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644); err != nil {
+		t.Fatalf("Failed to create go.mod: %v", err)
+	}
+
+	// Create test file structure with lifecycle methods
+	err = createTestFilesWithLifecycle(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to create test files: %v", err)
+	}
+
+	// Parse components
+	components, err := ParseComponents(tmpDir)
+	if err != nil {
+		t.Fatalf("ParseComponents failed: %v", err)
+	}
+
+	// Verify lifecycle methods
+	for _, comp := range components {
+		if comp.Type == "LifecycleService" {
+			if !comp.PostConstruct {
+				t.Error("LifecycleService should have PostConstruct method")
+			}
+			if !comp.PreDestroy {
+				t.Error("LifecycleService should have PreDestroy method")
+			}
+		}
+	}
+}
+
+func createTestFilesWithLifecycle(dir string) error {
+	// Create lifecycle package
+	lifecycleDir := filepath.Join(dir, "lifecycle")
+	if err := os.MkdirAll(lifecycleDir, 0755); err != nil {
+		return err
+	}
+
+	// Create lifecycle_service.go with PostConstruct and PreDestroy methods
+	lifecycleContent := `
+package lifecycle
+
+import "example.com/test/ioc"
+
+type LifecycleService struct {
+    Component struct{}
+}
+
+func (s *LifecycleService) PostConstruct() {
+    // Initialization logic
+}
+
+func (s *LifecycleService) PreDestroy() {
+    // Cleanup logic
+}
+`
+	if err := os.WriteFile(filepath.Join(lifecycleDir, "lifecycle_service.go"), []byte(lifecycleContent), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
