@@ -26,11 +26,13 @@ type templateData struct {
 
 // componentInit represents a single component's initialization data
 type componentInit struct {
-	VarName      string         // Variable name for the component instance
-	Type         string         // Component type name
-	Package      string         // Package path where component is defined
-	Dependencies []componentDep // List of dependencies for this component
-	Interfaces   []interfaceReg // List of interfaces this component implements
+	VarName       string         // Variable name for the component instance
+	Type          string         // Component type name
+	Package       string         // Package path where component is defined
+	Dependencies  []componentDep // List of dependencies for this component
+	Interfaces    []interfaceReg // List of interfaces this component implements
+	PostConstruct bool           // Whether component has PostConstruct method
+	PreDestroy    bool           // Whether component has PreDestroy method
 }
 
 // componentDep represents a single dependency of a component
@@ -80,6 +82,13 @@ func (g *Generator) Generate(baseDir string) error {
 			parts := strings.Split(pkg, "/")
 			return parts[len(parts)-1]
 		},
+		"iterate": func(count int) []int {
+			var result []int
+			for i := count - 1; i >= 0; i-- {
+				result = append(result, i)
+			}
+			return result
+		},
 	}
 
 	// Create and parse the code generation template
@@ -99,16 +108,23 @@ type Container struct {
     {{- end}}
 }
 
-func Initialize() *Container {
-    container := &Container{}
-    {{- range $comp := .Components}}
-    container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{
-        {{- range $dep := $comp.Dependencies}}
-        {{$dep.FieldName}}: container.{{$dep.VarName}},
-        {{- end}}
+func Initialize() (*Container, func()) {
+    container := &Container{}{{range $comp := .Components}}
+    container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{ {{- range $dep := $comp.Dependencies}}
+        {{$dep.FieldName}}: container.{{$dep.VarName}},{{- end}}
+    }{{if $comp.PostConstruct}}
+    container.{{$comp.Type}}.PostConstruct(){{- end}}{{end}}
+
+    cleanup := func() {
+        {{- range $i := len .Components | iterate -}}
+        {{- with index $.Components $i -}}
+        {{- if .PreDestroy -}}
+        container.{{.Type}}.PreDestroy(){{- end -}}
+        {{- end -}}
+        {{- end -}}
     }
-    {{- end}}
-    return container
+
+    return container, cleanup
 }
 `)
 	if err != nil {
@@ -197,11 +213,13 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 	// Second pass: create component initializations with dependencies and interface registrations
 	for _, comp := range components {
 		init := componentInit{
-			VarName:      varNames[comp.Package+"."+comp.Type],
-			Type:         comp.Type,
-			Package:      comp.Package,
-			Dependencies: []componentDep{},
-			Interfaces:   []interfaceReg{},
+			VarName:       varNames[comp.Package+"."+comp.Type],
+			Type:          comp.Type,
+			Package:       comp.Package,
+			Dependencies:  []componentDep{},
+			Interfaces:    []interfaceReg{},
+			PostConstruct: comp.PostConstruct,
+			PreDestroy:    comp.PreDestroy,
 		}
 
 		// Process each dependency for the component

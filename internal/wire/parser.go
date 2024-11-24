@@ -14,12 +14,14 @@ import (
 
 // Component represents a parsed IoC component with its metadata
 type Component struct {
-	Name         string       // Name of the component (from name tag or type name)
-	Type         string       // The Go type name
-	Package      string       // Full package path
-	Qualifier    string       // Qualifier value for disambiguation
-	Implements   []string     // Interfaces implemented by this component
-	Dependencies []Dependency // List of autowired dependencies
+	Name          string       // Name of the component (from name tag or type name)
+	Type          string       // The Go type name
+	Package       string       // Full package path
+	Qualifier     string       // Qualifier value for disambiguation
+	Implements    []string     // Interfaces implemented by this component
+	Dependencies  []Dependency // List of autowired dependencies
+	PostConstruct bool         // Whether component has PostConstruct method
+	PreDestroy    bool         // Whether component has PreDestroy method
 }
 
 // Dependency represents an autowired dependency field in a component
@@ -207,6 +209,37 @@ func ParseComponents(rootDir string) ([]Component, error) {
 
 					// Only add if it's a valid component
 					if hasComponent {
+						// Check for PostConstruct and PreDestroy methods
+						for _, decl := range file.Decls {
+							if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+								// Check if it's a method on our component type
+								if funcDecl.Recv != nil && len(funcDecl.Recv.List) == 1 {
+									recvType := funcDecl.Recv.List[0].Type
+									if starExpr, ok := recvType.(*ast.StarExpr); ok {
+										if ident, ok := starExpr.X.(*ast.Ident); ok {
+											if ident.Name == comp.Type {
+												// Check for PostConstruct method
+												if funcDecl.Name.Name == "PostConstruct" {
+													// Check if method has no parameters and no return values
+													if funcDecl.Type.Params.NumFields() == 0 &&
+														(funcDecl.Type.Results == nil || funcDecl.Type.Results.NumFields() == 0) {
+														comp.PostConstruct = true
+													}
+												}
+												// Check for PreDestroy method
+												if funcDecl.Name.Name == "PreDestroy" {
+													// Check if method has no parameters and no return values
+													if funcDecl.Type.Params.NumFields() == 0 &&
+														(funcDecl.Type.Results == nil || funcDecl.Type.Results.NumFields() == 0) {
+														comp.PreDestroy = true
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 						components = append(components, comp)
 					}
 
