@@ -108,6 +108,7 @@ type Container struct {
     {{- end}}
 }
 
+
 func Initialize() (*Container, func()) {
     container := &Container{}{{range $comp := .Components}}
     container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{ {{- range $dep := $comp.Dependencies}}
@@ -116,12 +117,13 @@ func Initialize() (*Container, func()) {
     container.{{$comp.Type}}.PostConstruct(){{- end}}{{end}}
 
     cleanup := func() {
-        {{- range $i := len .Components | iterate -}}
-        {{- with index $.Components $i -}}
-        {{- if .PreDestroy -}}
-        container.{{.Type}}.PreDestroy(){{- end -}}
-        {{- end -}}
-        {{- end -}}
+        {{- range $i := len .Components | iterate}}
+        {{- with index $.Components $i}}
+        {{- if .PreDestroy}}
+        container.{{.Type}}.PreDestroy()
+        {{- end}}
+        {{- end}}
+        {{- end}}
     }
 
     return container, cleanup
