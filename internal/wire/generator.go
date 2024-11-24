@@ -95,14 +95,14 @@ import ({{range .Imports}}
 
 type Container struct {
     {{- range $comp := .Components}}
-    {{$comp.VarName}} *{{$comp.Package | base}}.{{$comp.Type}}
+    {{$comp.Type}} *{{$comp.Package | base}}.{{$comp.Type}}
     {{- end}}
 }
 
 func Initialize() *Container {
     container := &Container{}
     {{- range $comp := .Components}}
-    container.{{$comp.VarName}} = &{{$comp.Package | base}}.{{$comp.Type}}{
+    container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{
         {{- range $dep := $comp.Dependencies}}
         {{$dep.FieldName}}: container.{{$dep.VarName}},
         {{- end}}
@@ -110,12 +110,6 @@ func Initialize() *Container {
     {{- end}}
     return container
 }
-
-{{- range $comp := .Components}}
-func (c *Container) Get{{$comp.Type}}() *{{$comp.Package | base}}.{{$comp.Type}} {
-    return c.{{$comp.VarName}}
-}
-{{- end}}
 `)
 	if err != nil {
 		return fmt.Errorf("template parsing failed: %w", err)
@@ -188,7 +182,6 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 	// First pass: generate unique variable names for all components
 	for _, comp := range components {
 		baseName := comp.Type
-		baseName = strings.ToLower(baseName[:1]) + baseName[1:]
 
 		count := nameCount[baseName]
 		nameCount[baseName]++

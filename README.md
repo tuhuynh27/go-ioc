@@ -116,41 +116,20 @@ import (
 )
 
 type Container struct {
-    emailService      *message.EmailService
-    smsService       *message.SmsService
-    notificationService *notification.NotificationService
+    EmailService        *message.EmailService
+    SmsService          *message.SmsService
+    NotificationService *notification.NotificationService
 }
 
 func Initialize() *Container {
     container := &Container{}
-    
-    container.emailService = &message.EmailService{
+    container.EmailService = &message.EmailService{}
+    container.SmsService = &message.SmsService{}
+    container.NotificationService = &notification.NotificationService{
+        EmailSender: container.EmailService,
+        SmsSender:   container.SmsService,
     }
-    
-    container.smsService = &message.SmsService{
-    }
-    
-    container.notificationService = &notification.NotificationService{
-        EmailSender: container.emailService,
-        SmsSender:   container.smsService,
-    }
-    
     return container
-}
-
-// GetEmailService returns the EmailService instance
-func (c *Container) GetEmailService() *message.EmailService {
-    return c.emailService
-}
-
-// GetSmsService returns the SmsService instance
-func (c *Container) GetSmsService() *message.SmsService {
-    return c.smsService
-}
-
-// GetNotificationService returns the NotificationService instance
-func (c *Container) GetNotificationService() *notification.NotificationService {
-    return c.notificationService
 }
 ```
 
@@ -170,7 +149,7 @@ func main() {
     container := wire.Initialize()
     
     // Get the service you need
-    notificationService := container.GetNotificationService()
+    notificationService := container.NotificationService
     
     // Use it
     notificationService.SendNotifications("Hello World!")

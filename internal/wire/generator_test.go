@@ -82,25 +82,25 @@ func TestGenerator_Generate(t *testing.T) {
 		}
 	}
 
-	// Check for Application struct
-	if !strings.Contains(contentStr, "type Application struct {") {
-		t.Error("Application struct not found in generated code")
+	// Check for Container struct
+	if !strings.Contains(contentStr, "type Container struct {") {
+		t.Error("Container struct not found in generated code")
 	}
 
 	// Check for Initialize function
-	if !strings.Contains(contentStr, "func Initialize() *Application {") {
+	if !strings.Contains(contentStr, "func Initialize() *Container {") {
 		t.Error("Initialize function not found in generated code")
 	}
 
-	// Check for getter methods
-	expectedGetters := []string{
-		"func (app *Application) GetStdoutLogger() *logger.StdoutLogger {",
-		"func (app *Application) GetEmailService() *message.EmailService {",
+	// Check for exported fields
+	expectedFields := []string{
+		"StdoutLogger *logger.StdoutLogger",
+		"EmailService *message.EmailService",
 	}
 
-	for _, getter := range expectedGetters {
-		if !strings.Contains(contentStr, getter) {
-			t.Errorf("Expected getter not found: %s", getter)
+	for _, field := range expectedFields {
+		if !strings.Contains(contentStr, field) {
+			t.Errorf("Expected field not found: %s", field)
 		}
 	}
 }
