@@ -171,14 +171,15 @@ func main() {
 | Code Generation | Yes | Yes | No | No |
 | Compile-time Safety | Yes | Yes | Partial | No |
 | Auto Component Scanning | Yes (via struct tags) | No | No | No |
+| Lifecycle Hooks | Yes | No | No | No |
 
 ## Test with Go IoC
 
 Please check the [testing](docs/testing.md) guide for more information.
 
-## Demo
+## Example
 
-Please check the demo Git repository (example with Go Gin web framework) [here](https://github.com/tuhuynh27/go-ioc-gin-demo)
+Please check the example Git repository (example with Go Gin web framework) [here](https://github.com/tuhuynh27/go-ioc-gin-demo)
 
 ## FAQ
 

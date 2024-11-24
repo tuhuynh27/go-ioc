@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"path/filepath"
 
@@ -9,6 +10,8 @@ import (
 )
 
 func main() {
+	printBanner()
+
 	var (
 		dir     = flag.String("dir", ".", "Directory to scan for components")
 		output  = flag.String("output", "wire/wire_gen.go", "Output file for generated code")
@@ -48,4 +51,16 @@ func main() {
 	}
 
 	log.Printf("Successfully generated wire file: %s/%s", absDir, *output)
+}
+
+func printBanner() {
+	fmt.Println(`
+   ______      _____ ____  ______
+  / ____/___  /  _/ / __ \/ ____/
+ / / __/ __ \ / // / / / / /     
+/ /_/ / /_/ // // / /_/ / /___   
+\____/\____/___/_/\____/\____/   
+                                 
+Inversion of Control for Go
+Version 0.0.0`)
 }
