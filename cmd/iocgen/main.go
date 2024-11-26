@@ -1,39 +1,41 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
 	"github.com/tuhuynh27/go-ioc/internal/wire"
 )
+
+var (
+	rootCmd = &cobra.Command{
+		Use:   "ioc-generate",
+		Short: "Go IoC - Dependency Injection Code Generator",
+		Run:   func(cmd *cobra.Command, args []string) {},
+	}
+
+	dir, output   string
+	verbose, help bool
+)
+
+func init() {
+	rootCmd.InitDefaultHelpCmd()
+}
 
 func main() {
 	printBanner()
 
-	// Check for help flag
-	if len(os.Args) > 1 && (os.Args[1] == "-help" || os.Args[1] == "help") {
-		printHelp()
-		return
-	}
+	rootCmd.PersistentFlags().StringVar(&dir, "dir", ".", "Directory to scan for components")
+	rootCmd.PersistentFlags().StringVar(&output, "output", "wire/wire_gen.go", "Output file for generated code")
+	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Enable verbose logging")
+	rootCmd.PersistentFlags().BoolVar(&help, "help", false, "Show help message")
 
-	var (
-		dir     = flag.String("dir", ".", "Directory to scan for components")
-		output  = flag.String("output", "wire/wire_gen.go", "Output file for generated code")
-		verbose = flag.Bool("verbose", false, "Enable verbose logging")
-		help    = flag.Bool("help", false, "Show help message")
-	)
-	flag.Parse()
-
-	if *help {
-		printHelp()
-		return
-	}
+	rootCmd.Execute()
 
 	// Convert to absolute path
-	absDir, err := filepath.Abs(*dir)
+	absDir, err := filepath.Abs(dir)
 	if err != nil {
 		log.Fatalf("Error getting absolute path: %v", err)
 	}
@@ -47,7 +49,7 @@ func main() {
 		log.Fatalf("Error parsing components: %v", err)
 	}
 
-	if *verbose {
+	if verbose {
 		for _, comp := range components {
 			log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
 			log.Printf("- Qualifier: %s", comp.Qualifier)
@@ -62,25 +64,7 @@ func main() {
 		log.Fatalf("Error generating code: %v", err)
 	}
 
-	log.Printf("Successfully generated wire file: %s/%s", absDir, *output)
-}
-
-func printHelp() {
-	fmt.Println("Go IoC - Dependency Injection Code Generator")
-	fmt.Println("\nUsage:")
-	fmt.Println("  ioc-generate [flags]")
-	fmt.Println("\nFlags:")
-	fmt.Println("  -dir string")
-	fmt.Println("        Directory to scan for components (default \".\")")
-	fmt.Println("  -output string")
-	fmt.Println("        Output file for generated code (default \"wire/wire_gen.go\")")
-	fmt.Println("  -verbose")
-	fmt.Println("        Enable verbose logging")
-	fmt.Println("  -help")
-	fmt.Println("        Show this help message")
-	fmt.Println("\nExample:")
-	fmt.Println("  ioc-generate -dir=./src -output=wire/generated.go -verbose")
-	os.Exit(0)
+	log.Printf("Successfully generated wire file: %s/%s", absDir, output)
 }
 
 func printBanner() {
