@@ -40,12 +40,27 @@ go 1.20
 	}
 
 	// Update expected component count
-	expectedComponents := 6 // Updated for: EmailMessageService, SMSMessageService, NotificationService, MessageService interface, ConsoleLogger, JsonLogger
+	expectedComponents := 6 // ConfigData, EmailMessageService, SMSMessageService, NotificationService, ConsoleLogger, JsonLogger
 	if len(components) != expectedComponents {
 		t.Errorf("Expected %d components, got %d", expectedComponents, len(components))
 		for _, comp := range components {
 			t.Logf("Found component: %s (package: %s)", comp.Type, comp.Package)
 		}
+	}
+
+	// Verify constructor-based initialization
+	var configData bool
+	for _, comp := range components {
+		if comp.Type == "ConfigData" {
+			configData = true
+			if comp.Constructor != "NewConfigData" {
+				t.Errorf("Expected constructor NewConfigData for ConfigData, got %s", comp.Constructor)
+			}
+		}
+	}
+
+	if !configData {
+		t.Error("ConfigData component not found")
 	}
 
 	// Verify components were found
@@ -176,6 +191,26 @@ go 1.20
 	wireFile := filepath.Join(tmpDir, "wire", "wire_gen.go")
 	if _, err := os.Stat(wireFile); os.IsNotExist(err) {
 		t.Error("wire_gen.go was not generated")
+	}
+
+	// Add verification of generated wire code for constructor
+	wireContent, err := os.ReadFile(wireFile)
+	if err != nil {
+		t.Fatalf("Failed to read generated wire file: %v", err)
+	}
+
+	wireContentStr := string(wireContent)
+
+	// Verify constructor-based initialization in generated code
+	expectedInit := "container.ConfigData = config.NewConfigData()"
+	if !strings.Contains(wireContentStr, expectedInit) {
+		t.Error("Expected constructor-based initialization not found in generated code")
+	}
+
+	// Verify struct-based initialization still works
+	expectedStructInit := "container.NotificationService = &service.NotificationService{"
+	if !strings.Contains(wireContentStr, expectedStructInit) {
+		t.Error("Expected struct-based initialization not found in generated code")
 	}
 }
 

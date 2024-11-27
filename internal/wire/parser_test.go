@@ -132,6 +132,12 @@ type EmailService struct {
     Logger logger.Logger ` + "`autowired:\"\"`" + `
 }
 
+func NewEmailService(logger logger.Logger) *EmailService {
+    return &EmailService{
+        Logger: logger,
+    }
+}
+
 func (s *EmailService) SendEmail(to, message string) error {
     s.Logger.Log("Sending email: " + message)
     return nil
@@ -266,4 +272,42 @@ func (s *LifecycleService) PreDestroy() {
 	}
 
 	return nil
+}
+
+func TestParseComponentsWithConstructor(t *testing.T) {
+	// Create temporary directory for test
+	tmpDir, err := os.MkdirTemp("", "ioc-test-constructor-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create go.mod file
+	goModContent := `module example.com/test
+go 1.20
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goModContent), 0644); err != nil {
+		t.Fatalf("Failed to create go.mod: %v", err)
+	}
+
+	// Create test files
+	err = createTestFiles(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to create test files: %v", err)
+	}
+
+	// Parse components
+	components, err := ParseComponents(tmpDir)
+	if err != nil {
+		t.Fatalf("ParseComponents failed: %v", err)
+	}
+
+	// Check for constructor
+	for _, comp := range components {
+		if comp.Type == "EmailService" {
+			if comp.Constructor != "NewEmailService" {
+				t.Errorf("Expected constructor NewEmailService, got %s", comp.Constructor)
+			}
+		}
+	}
 }
