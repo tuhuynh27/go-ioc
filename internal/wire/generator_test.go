@@ -319,3 +319,62 @@ func TestGenerator_GenerateCyclicDependencies(t *testing.T) {
 	// Attempt to generate code
 	gen.Generate(tmpDir) // This should trigger the panic
 }
+
+func TestGenerator_GenerateWithConstructor(t *testing.T) {
+	// Create temporary directory for test
+	tmpDir, err := os.MkdirTemp("", "ioc-test-constructor-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Test components with constructor
+	components := []Component{
+		{
+			Name:    "StdoutLogger",
+			Type:    "StdoutLogger",
+			Package: "example.com/test/logger",
+			Implements: []string{
+				"example.com/test/logger.Logger",
+			},
+			Qualifier: "stdout",
+		},
+		{
+			Name:        "EmailService",
+			Type:        "EmailService",
+			Package:     "example.com/test/message",
+			Constructor: "NewEmailService",
+			Dependencies: []Dependency{
+				{
+					FieldName: "Logger",
+					Type:      "logger.Logger",
+					Qualifier: "stdout",
+				},
+			},
+		},
+	}
+
+	// Create generator
+	gen := NewGenerator(components)
+
+	// Generate code
+	err = gen.Generate(tmpDir)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Read generated file
+	content, err := os.ReadFile(filepath.Join(tmpDir, "wire", "wire_gen.go"))
+	if err != nil {
+		t.Fatalf("Failed to read generated file: %v", err)
+	}
+
+	// Check content
+	contentStr := string(content)
+
+	// Check for constructor-based initialization
+	expectedInit := "container.EmailService = message.NewEmailService(container.StdoutLogger)"
+	if !strings.Contains(contentStr, expectedInit) {
+		t.Errorf("Expected constructor initialization not found in generated code")
+	}
+}

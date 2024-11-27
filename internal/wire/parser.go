@@ -22,6 +22,7 @@ type Component struct {
 	Dependencies  []Dependency // List of autowired dependencies
 	PostConstruct bool         // Whether component has PostConstruct method
 	PreDestroy    bool         // Whether component has PreDestroy method
+	Constructor   string       // Name of the constructor function (e.g., "NewUserService")
 }
 
 // Dependency represents an autowired dependency field in a component
@@ -240,6 +241,23 @@ func ParseComponents(rootDir string) ([]Component, error) {
 								}
 							}
 						}
+
+						// Look for constructor function
+						for _, decl := range file.Decls {
+							if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+								// Check if it's a constructor function (returns pointer to our type)
+								if funcDecl.Type.Results != nil && len(funcDecl.Type.Results.List) == 1 {
+									if starExpr, ok := funcDecl.Type.Results.List[0].Type.(*ast.StarExpr); ok {
+										if ident, ok := starExpr.X.(*ast.Ident); ok {
+											if ident.Name == comp.Type {
+												comp.Constructor = funcDecl.Name.Name
+											}
+										}
+									}
+								}
+							}
+						}
+
 						components = append(components, comp)
 					}
 

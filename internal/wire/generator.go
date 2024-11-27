@@ -34,6 +34,7 @@ type componentInit struct {
 	Interfaces    []interfaceReg // List of interfaces this component implements
 	PostConstruct bool           // Whether component has PostConstruct method
 	PreDestroy    bool           // Whether component has PreDestroy method
+	Constructor   string         // Name of the constructor function
 }
 
 // componentDep represents a single dependency of a component
@@ -112,10 +113,12 @@ type Container struct {
 
 func Initialize() (*Container, func()) {
     container := &Container{}{{range $comp := .Components}}
+    {{if $comp.Constructor}}
+    container.{{$comp.Type}} = {{$comp.Package | base}}.{{$comp.Constructor}}({{- range $i, $dep := $comp.Dependencies}}{{if $i}}, {{end}}container.{{$dep.VarName}}{{- end}}){{else}}
     container.{{$comp.Type}} = &{{$comp.Package | base}}.{{$comp.Type}}{{if $comp.Dependencies}}{
         {{- range $dep := $comp.Dependencies}}
         {{$dep.FieldName}}: container.{{$dep.VarName}},{{- end}}
-    }{{else}}{}{{end}}{{if $comp.PostConstruct}}
+    }{{else}}{}{{end}}{{end}}{{if $comp.PostConstruct}}
     container.{{$comp.Type}}.PostConstruct(){{- end}}{{end}}
 
     cleanup := func() {
@@ -129,8 +132,7 @@ func Initialize() (*Container, func()) {
     }
 
     return container, cleanup
-}
-`)
+}`)
 	if err != nil {
 		return fmt.Errorf("template parsing failed: %w", err)
 	}
@@ -224,16 +226,16 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 			Interfaces:    []interfaceReg{},
 			PostConstruct: comp.PostConstruct,
 			PreDestroy:    comp.PreDestroy,
+			Constructor:   comp.Constructor,
 		}
 
 		// Process each dependency for the component
 		for _, dep := range comp.Dependencies {
 			depVarName := ""
-			depType := dep.Type
 
-			if strings.Contains(depType, ".") {
+			if strings.Contains(dep.Type, ".") {
 				// Handle interface dependencies
-				parts := strings.Split(depType, ".")
+				parts := strings.Split(dep.Type, ".")
 				pkgName := parts[0]
 				interfaceName := parts[1]
 
@@ -257,7 +259,7 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 			} else {
 				// Handle direct type dependencies
 				for _, c := range components {
-					if c.Type == depType {
+					if c.Type == dep.Type {
 						depVarName = varNames[c.Package+"."+c.Type]
 						break
 					}
