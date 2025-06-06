@@ -1,0 +1,135 @@
+{
+  "name": "go-ioc",
+  "displayName": "Go IoC",
+  "description": "IDE support for Go IoC dependency injection framework with visual decorators, syntax validation, smart completions, and real-time error detection",
+  "version": "0.3.0",
+  "publisher": "keva-dev",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": ["Other", "Snippets", "Programming Languages"],
+  "keywords": [
+    "go",
+    "golang", 
+    "dependency injection",
+    "ioc",
+    "autowired",
+    "spring-like",
+    "dependency container",
+    "wire",
+    "inversion of control"
+  ],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#00ADD8",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onLanguage:go"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "go",
+        "path": "./snippets/go-ioc.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "go-ioc.generate",
+        "title": "Go IoC: Generate Wire Files",
+        "category": "Go IoC"
+      },
+      {
+        "command": "go-ioc.validate",
+        "title": "Go IoC: Validate Components",
+        "category": "Go IoC"
+      },
+      {
+        "command": "go-ioc.analyze",
+        "title": "Go IoC: Analyze Dependencies",
+        "category": "Go IoC"
+      },
+      {
+        "command": "go-ioc.graph",
+        "title": "Go IoC: Show Dependency Graph",
+        "category": "Go IoC"
+      },
+      {
+        "command": "go-ioc.list",
+        "title": "Go IoC: List Components",
+        "category": "Go IoC"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "go-ioc.generate",
+          "when": "explorerResourceIsFolder && resourceExtname == '.go'",
+          "group": "go-ioc"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "go-ioc.validate",
+          "when": "resourceExtname == '.go'",
+          "group": "go-ioc"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Go IoC",
+      "properties": {
+        "go-ioc.iocgenPath": {
+          "type": "string",
+          "default": "iocgen",
+          "description": "Path to the iocgen binary"
+        },
+        "go-ioc.autoGenerate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically generate wire files on save"
+        },
+        "go-ioc.verboseOutput": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose output for iocgen commands"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "eslint": "^8.20.0",
+    "typescript": "^4.7.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tuhuynh27/go-ioc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tuhuynh27/go-ioc/issues"
+  },
+  "homepage": "https://github.com/tuhuynh27/go-ioc#readme",
+  "license": "MIT",
+  "qna": "marketplace",
+  "badges": [
+    {
+      "url": "https://github.com/tuhuynh27/go-ioc/actions/workflows/test.yml/badge.svg",
+      "href": "https://github.com/tuhuynh27/go-ioc/actions",
+      "description": "Build Status"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "IoC Component": {
+    "prefix": "ioc-component",
+    "body": [
+      "type ${1:ServiceName} struct {",
+      "\tComponent struct{} ${2:// IoC component marker}",
+      "\t${3:// Add fields here}",
+      "}"
+    ],
+    "description": "Create IoC component"
+  },
+  "IoC Component with Interface": {
+    "prefix": "ioc-interface",
+    "body": [
+      "type ${1:ServiceName} struct {",
+      "\tComponent struct{}",
+      "\tImplements struct{} `implements:\"${2:InterfaceName}\"`",
+      "\tQualifier struct{} `value:\"${3:qualifier}\"`",
+      "\t${4:// Add fields here}",
+      "}"
+    ],
+    "description": "Create IoC component implementing interface"
+  },
+  "IoC Component with Qualifier": {
+    "prefix": "ioc-qualified",
+    "body": [
+      "type ${1:ServiceName} struct {",
+      "\tComponent struct{}",
+      "\tQualifier struct{} `value:\"${2:qualifier}\"`",
+      "\t${3:// Add fields here}",
+      "}"
+    ],
+    "description": "Create IoC component with qualifier"
+  },
+  "IoC Dependency": {
+    "prefix": "ioc-autowired",
+    "body": [
+      "${1:FieldName} ${2:InterfaceType} `autowired:\"true\"${3: qualifier:\"${4:value}\"}`"
+    ],
+    "description": "Add autowired dependency"
+  },
+  "IoC Dependency Simple": {
+    "prefix": "ioc-dep",
+    "body": [
+      "${1:FieldName} ${2:InterfaceType} `autowired:\"true\"`"
+    ],
+    "description": "Add simple autowired dependency"
+  },
+  "IoC Dependency with Qualifier": {
+    "prefix": "ioc-dep-qual",
+    "body": [
+      "${1:FieldName} ${2:InterfaceType} `autowired:\"true\" qualifier:\"${3:qualifier}\"`"
+    ],
+    "description": "Add autowired dependency with qualifier"
+  },
+  "IoC PostConstruct": {
+    "prefix": "ioc-postconstruct",
+    "body": [
+      "func (${1:receiver} *${2:ComponentName}) PostConstruct() error {",
+      "\t${3:// Initialization logic here}",
+      "\treturn nil",
+      "}"
+    ],
+    "description": "Add PostConstruct lifecycle method"
+  },
+  "IoC PreDestroy": {
+    "prefix": "ioc-predestroy",
+    "body": [
+      "func (${1:receiver} *${2:ComponentName}) PreDestroy() error {",
+      "\t${3:// Cleanup logic here}",
+      "\treturn nil",
+      "}"
+    ],
+    "description": "Add PreDestroy lifecycle method"
+  },
+  "IoC Full Component": {
+    "prefix": "ioc-full",
+    "body": [
+      "type ${1:ServiceName} struct {",
+      "\tComponent struct{}",
+      "\tImplements struct{} `implements:\"${2:InterfaceName}\"`",
+      "\tQualifier struct{} `value:\"${3:qualifier}\"`",
+      "",
+      "\t// Dependencies",
+      "\t${4:DependencyName} ${5:DependencyType} `autowired:\"true\"`",
+      "}",
+      "",
+      "func (${6:s} *${1:ServiceName}) PostConstruct() error {",
+      "\t${7:// Initialization logic}",
+      "\treturn nil",
+      "}",
+      "",
+      "func (${6:s} *${1:ServiceName}) PreDestroy() error {",
+      "\t${8:// Cleanup logic}",
+      "\treturn nil",
+      "}"
+    ],
+    "description": "Create full IoC component with lifecycle methods"
+  },
+  "IoC Interface Definition": {
+    "prefix": "ioc-iface",
+    "body": [
+      "type ${1:InterfaceName} interface {",
+      "\t${2:MethodName}(${3:params}) ${4:returnType}",
+      "}"
+    ],
+    "description": "Create interface for IoC component"
+  },
+  "IoC Container Access": {
+    "prefix": "ioc-container",
+    "body": [
+      "container, cleanup := wire.Initialize()",
+      "defer cleanup()",
+      "",
+      "${1:// Use container.ComponentName to access components}"
+    ],
+    "description": "Initialize IoC container"
+  }
+}

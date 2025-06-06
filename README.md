@@ -51,6 +51,34 @@ Go IoC uses code generation to create a dependency injection system in three sim
 
 The result is a fast, type-safe dependency injection system with zero runtime reflection.
 
+## IDE Support
+
+### VS Code Extension
+
+Get enhanced IDE support with the official Go IoC VS Code extension:
+
+**[📦 Install from VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=keva-dev.go-ioc)**
+
+**Features:**
+- 🎨 **Visual Decorators**: IoC annotations highlighted with emojis (⚙️ Components, 🔗 Autowired, 🏷️ Qualifiers, 🔌 Interfaces)
+- ⚠️ **Real-time Validation**: Live syntax checking for struct tags with actionable error messages
+- 💡 **Smart Completions**: IntelliSense for IoC struct tags and annotations
+- 🔍 **Hover Information**: Detailed documentation on IoC components and lifecycle methods
+- 🔗 **Interface Navigation**: Ctrl+Click on interface names in `implements` tags to jump to definitions
+- 🎯 **Commands**: Generate wire files, validate components, analyze dependencies, and show dependency graphs
+- 🔧 **Code Snippets**: Quick snippets for creating components, adding dependencies, and lifecycle methods
+
+Install via VS Code:
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X)
+3. Search for "Go IoC"
+4. Click Install
+
+Or install via command line:
+```bash
+code --install-extension keva-dev.go-ioc
+```
+
 ## Usage
 
 To use Go IoC in your project, install the GO IoC code generator:
