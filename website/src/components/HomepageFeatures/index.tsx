@@ -56,16 +56,53 @@ function Feature({title, icon, description}: FeatureItem) {
   );
 }
 
-export default function HomepageFeatures(): ReactNode {
+function AntiPatternNotice(): ReactNode {
   return (
     <section className={styles.features}>
       <div className="container">
         <div className="row">
-          {FeatureList.map((props, idx) => (
-            <Feature key={idx} {...props} />
-          ))}
+          <div className="col col--12">
+            <div className="admonition admonition-caution">
+              <div className="admonition-heading">
+                <h5>⚠️ Important: Go Anti-Patterns & Migration Strategy</h5>
+              </div>
+              <div className="admonition-content">
+                <p>
+                  <strong>This library intentionally violates Go idioms</strong> to provide a familiar 
+                  migration bridge for Java/Spring teams transitioning to Go. While technically functional, 
+                  it introduces anti-patterns like magic struct tags and global state containers.
+                </p>
+                <p>
+                  <strong>Use Case</strong>: Temporary productivity bridge for Java developers learning Go.
+                  The compile-time approach ensures clean migration to idiomatic Go patterns when ready.
+                </p>
+                <p>
+                  <a href="/docs/anti-patterns" className="button button--primary">
+                    📖 Read Full Migration Strategy →
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+export default function HomepageFeatures(): ReactNode {
+  return (
+    <>
+      <AntiPatternNotice />
+      <section className={styles.features}>
+        <div className="container">
+          <div className="row">
+            {FeatureList.map((props, idx) => (
+              <Feature key={idx} {...props} />
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

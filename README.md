@@ -328,6 +328,68 @@ Please check the [testing](docs/testing.md) guide for more information.
 
 Please check the [example Git repository](https://github.com/tuhuynh27/go-ioc-gin-demo) (example with Go Gin web framework)
 
+## Author's Note: Go Anti-Patterns and Migration Strategy
+
+### ⚠️ Important Consideration
+
+**This library intentionally violates Go idioms and best practices.** While Go IoC is technically functional and performant, it introduces several anti-patterns that go against Go's design philosophy:
+
+**Anti-Patterns Used:**
+- **Struct Embedding Abuse**: Empty struct fields as magic markers (`Component struct{}`, `Qualifier struct{}`)
+- **Magic Behavior**: Heavy reliance on struct tags for core functionality instead of explicit code
+- **Interface Pollution**: Upfront interface definitions rather than Go's "discover interfaces at point of use"
+- **Global State Pattern**: Generated Container acting as a service locator
+- **Convention over Configuration**: Java Spring naming conventions rather than Go idioms
+
+### 🎯 Why Build This Despite Anti-Patterns?
+
+**Migration Bridge for Java Teams**: This library serves as a **temporary migration tool** for teams transitioning from Java/Spring to Go. It provides:
+
+1. **Familiar Patterns**: Reduces cognitive load for Spring developers learning Go
+2. **Faster Initial Adoption**: Teams can be productive immediately without learning Go's dependency patterns
+3. **Gradual Learning Curve**: Allows teams to focus on Go syntax and tooling before tackling Go's architectural patterns
+
+### 🚀 Clean Migration Path
+
+**The beauty of compile-time generation**: Since Go IoC leaves no runtime footprints, migration to idiomatic Go patterns is straightforward:
+
+1. **Start with Go IoC**: Use familiar Spring-like patterns for initial development
+2. **Learn Go Idioms**: Gradually understand Go's explicit dependency injection patterns
+3. **Clean Removal**: Simply remove the marker structs and struct tags
+4. **Refactor to Constructors**: Replace with explicit constructor functions
+
+**Migration Example:**
+
+```go
+// Before (Go IoC)
+type NotificationService struct {
+    Component struct{}
+    EmailSender message.MessageService `autowired:"true" qualifier:"email"`
+    SmsSender   message.MessageService `autowired:"true" qualifier:"sms"`
+}
+
+// After (Idiomatic Go)
+type NotificationService struct {
+    emailSender message.MessageService
+    smsSender   message.MessageService
+}
+
+func NewNotificationService(emailSender, smsSender message.MessageService) *NotificationService {
+    return &NotificationService{
+        emailSender: emailSender,
+        smsSender:   smsSender,
+    }
+}
+```
+
+### 🎯 Recommendation
+
+**For Production Go Applications**: Use explicit constructor patterns and Go's built-in dependency management.
+
+**For Java Teams Learning Go**: Go IoC can serve as a stepping stone, but plan to migrate to idiomatic Go patterns as your team becomes comfortable with Go's philosophy of explicit, simple code.
+
+**Remember**: The goal is not to make Go look like Java, but to help Java developers become productive Go developers faster.
+
 ## FAQ
 
 ### What's the performance impact?
