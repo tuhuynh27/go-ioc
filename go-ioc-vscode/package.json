@@ -2,7 +2,7 @@
   "name": "go-ioc",
   "displayName": "Go IoC",
   "description": "IDE support for Go IoC dependency injection framework with visual decorators, syntax validation, smart completions, and real-time error detection",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "keva-dev",
   "engines": {
     "vscode": "^1.60.0"

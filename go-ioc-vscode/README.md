@@ -2,6 +2,8 @@
 
 VS Code extension providing IDE support for the Go IoC dependency injection framework.
 
+![Demo](demo.gif)
+
 ## Features
 
 ### 🔧 Code Snippets
@@ -144,6 +146,26 @@ Hover over highlighted issues for detailed error information and suggested fixes
    ```
 
 4. **Generate wire files** using Command Palette → "Go IoC: Generate Wire Files"
+
+## Comparison with Other DI Libraries
+
+| Feature | Go IoC | Google Wire | Uber Dig | Facebook Inject |
+|---------|-------|-------------|-----------|--------------------|
+| Dependency Definition | Struct tags & marker structs | Function providers | Constructor functions | Struct tags |
+| Runtime Overhead | None | None | Reflection-based | Reflection-based |
+| Configuration Style | Spring-like annotations | Explicit provider functions | Constructor injection | Field tags |
+| Interface Binding | Built-in | Manual provider setup | Manual provider setup | Limited support |
+| Qualifier Support | Yes, via struct tags | No built-in support | Via name annotations | No |
+| Learning Curve | Low (familiar to Spring devs) | Medium | Medium | Low |
+| Code Generation | Yes | Yes | No | No |
+| Compile-time Safety | Yes | Yes | Partial | No |
+| Auto Component Scanning | Yes | No | No | No |
+| Lifecycle Hooks | Yes | No | No | No |
+| **Component Analysis** | **✅ Advanced** | **❌ None** | **❌ None** | **❌ None** |
+| **Dependency Graph Visualization** | **✅ Built-in** | **❌ Manual** | **❌ Manual** | **❌ Manual** |
+| **Circular Dependency Detection** | **✅ Automatic** | **⚠️ Build-time** | **⚠️ Runtime** | **❌ None** |
+| **Unused Component Detection** | **✅ Yes** | **❌ No** | **❌ No** | **❌ No** |
+| **Validation & Debugging** | **✅ Comprehensive** | **⚠️ Basic** | **⚠️ Basic** | **❌ None** |
 
 ## Contributing
 
