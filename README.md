@@ -12,6 +12,7 @@ While other DI solutions exist in Go ([Google's Wire](https://github.com/google/
 - Supporting interface implementations and qualifiers elegantly
 - Enabling automatic component scanning via struct marker
 - Supporting lifecycle hooks via PostConstruct and PreDestroy struct methods
+- **Advanced component analysis and debugging tools** including dependency graph visualization, circular dependency detection, and unused component identification
 
 ## But why bring @Autowired to Go?
 
@@ -174,6 +175,103 @@ func main() {
 }
 ```
 
+## Component Discovery & Analysis
+
+Go IoC provides powerful analysis tools to understand and optimize your component configurations:
+
+### Component Listing
+
+List all discovered components with detailed information:
+
+```bash
+iocgen --list
+```
+
+This shows:
+- Component locations (file and line number)
+- Dependencies and their qualifiers
+- Interface implementations
+- Lifecycle methods (PostConstruct/PreDestroy)
+- Constructor functions
+
+Example output:
+```
+📦 notification.NotificationService [src/notification/service.go:15]
+   🔗 Dependencies:
+     - EmailSender: message.MessageService (qualifier: email)
+     - SmsSender: message.MessageService (qualifier: sms)
+     - Logger: logger.Logger (qualifier: json)
+
+📦 message.EmailService (qualifier: email) [src/message/email.go:8]
+   📋 Implements: message.MessageService
+   🔗 Dependencies:
+     - Config: config.Config
+     - Logger: logger.Logger (qualifier: console)
+   🚀 Has PostConstruct method
+```
+
+### Comprehensive Analysis
+
+Perform in-depth analysis of your component architecture:
+
+```bash
+iocgen --analyze
+```
+
+The analysis report includes:
+
+**🔍 Component Overview**
+- Total components and dependencies
+- Package distribution
+- Component hierarchy depth
+
+**🔄 Circular Dependency Detection**
+- Identifies dependency cycles
+- Shows complete dependency paths
+- Suggests resolution strategies
+
+**🗑️ Unused Component Detection**
+- Finds components that aren't used as dependencies
+- Helps identify potential cleanup opportunities
+- Useful for removing dead code
+
+**🔗 Orphaned Component Detection**
+- Components with unsatisfied dependencies
+- Missing interface implementations
+- Configuration issues
+
+**🔌 Interface Analysis**
+- Multiple implementations per interface
+- Interfaces with no implementations
+- Qualifier conflicts and ambiguity
+
+**📏 Dependency Depth Analysis**
+- Calculates component initialization order
+- Shows dependency hierarchy levels
+- Identifies deeply nested dependencies
+
+### Validation Without Generation
+
+Validate your component configuration without generating files:
+
+```bash
+# Quick validation
+iocgen --dry-run
+
+# Detailed validation with warnings
+iocgen --dry-run --verbose
+```
+
+### Dependency Graph Visualization
+
+Visualize component relationships:
+
+```bash
+iocgen --graph
+```
+
+Shows a tree-like structure of all components and their dependencies, making it easy to understand the overall architecture.
+
 ## Comparison with Other DI Libraries
 
 | Feature | Go IoC | Google Wire | Uber Dig | Facebook Inject |
@@ -188,6 +286,11 @@ func main() {
 | Compile-time Safety | Yes | Yes | Partial | No |
 | Auto Component Scanning | Yes | No | No | No |
 | Lifecycle Hooks | Yes | No | No | No |
+| **Component Analysis** | **✅ Advanced** | **❌ None** | **❌ None** | **❌ None** |
+| **Dependency Graph Visualization** | **✅ Built-in** | **❌ Manual** | **❌ Manual** | **❌ Manual** |
+| **Circular Dependency Detection** | **✅ Automatic** | **⚠️ Build-time** | **⚠️ Runtime** | **❌ None** |
+| **Unused Component Detection** | **✅ Yes** | **❌ No** | **❌ No** | **❌ No** |
+| **Validation & Debugging** | **✅ Comprehensive** | **⚠️ Basic** | **⚠️ Basic** | **❌ None** |
 
 ## Test with Go IoC
 

@@ -60,6 +60,17 @@ var (
 				return
 			}
 
+			if listComponents {
+				gen.ListComponents()
+				return
+			}
+
+			if analyzeComponents {
+				analyzer := wire.NewAnalyzer(components)
+				analyzer.PrintAnalysisReport()
+				return
+			}
+
 			// Generate code
 			if err := gen.Generate(absDir); err != nil {
 				log.Fatalf("Error generating code: %v", err)
@@ -69,9 +80,10 @@ var (
 		},
 	}
 
-	dir, output         string
-	verbose, help       bool
-	showGraph, dryRun   bool
+	dir, output                           string
+	verbose, help                         bool
+	showGraph, dryRun                     bool
+	listComponents, analyzeComponents     bool
 )
 
 func main() {
@@ -81,6 +93,8 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&help, "help", "h", false, "Show help message")
 	rootCmd.PersistentFlags().BoolVar(&showGraph, "graph", false, "Show dependency graph visualization")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Validate components without generating files")
+	rootCmd.PersistentFlags().BoolVar(&listComponents, "list", false, "List all discovered components")
+	rootCmd.PersistentFlags().BoolVar(&analyzeComponents, "analyze", false, "Perform comprehensive component analysis")
 
 	printBanner()
 	rootCmd.Execute()

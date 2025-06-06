@@ -490,6 +490,60 @@ func (g *Generator) countInterfaceImplementations() int {
 	return total
 }
 
+// ListComponents displays a formatted list of all discovered components
+func (g *Generator) ListComponents() {
+	fmt.Printf("Discovered %d components:\n\n", len(g.components))
+	
+	if len(g.components) == 0 {
+		fmt.Println("No components found.")
+		return
+	}
+	
+	for i, comp := range g.components {
+		fmt.Printf("📦 %s.%s", comp.Package, comp.Type)
+		if comp.Qualifier != "" {
+			fmt.Printf(" (qualifier: %s)", comp.Qualifier)
+		}
+		fmt.Printf(" [%s:%d]\n", comp.SourceFile, comp.LineNumber)
+		
+		if len(comp.Implements) > 0 {
+			fmt.Printf("   📋 Implements: %s\n", strings.Join(comp.Implements, ", "))
+		}
+		
+		if len(comp.Dependencies) > 0 {
+			fmt.Printf("   🔗 Dependencies:\n")
+			for _, dep := range comp.Dependencies {
+				fmt.Printf("     - %s: %s", dep.FieldName, dep.Type)
+				if dep.Qualifier != "" {
+					fmt.Printf(" (qualifier: %s)", dep.Qualifier)
+				}
+				fmt.Println()
+			}
+		} else {
+			fmt.Printf("   📝 No dependencies\n")
+		}
+		
+		if comp.PostConstruct {
+			fmt.Printf("   🚀 Has PostConstruct method\n")
+		}
+		if comp.PreDestroy {
+			fmt.Printf("   🛑 Has PreDestroy method\n")
+		}
+		if comp.Constructor != "" {
+			fmt.Printf("   🏗️  Constructor: %s\n", comp.Constructor)
+		}
+		
+		if i < len(g.components)-1 {
+			fmt.Println()
+		}
+	}
+	
+	fmt.Printf("\nSummary:\n")
+	fmt.Printf("  Components: %d\n", len(g.components))
+	fmt.Printf("  Dependencies: %d\n", g.countTotalDependencies())
+	fmt.Printf("  Interfaces: %d\n", g.countInterfaceImplementations())
+}
+
 // contains checks if a slice contains a string (with suffix matching)
 func contains(slice []string, str string) bool {
 	for _, s := range slice {
