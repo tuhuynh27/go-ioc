@@ -2,7 +2,7 @@
 
 VS Code extension providing IDE support for the Go IoC dependency injection framework.
 
-![Demo](demo.gif)
+![Demo](https://raw.githubusercontent.com/tuhuynh27/go-ioc/main/go-ioc-vscode/demo.gif)
 
 ## Features
 
