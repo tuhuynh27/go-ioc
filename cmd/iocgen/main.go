@@ -37,14 +37,30 @@ var (
 			if verbose {
 				for _, comp := range components {
 					log.Printf("Component: %s (package: %s)", comp.Name, comp.Package)
+					log.Printf("- Source: %s:%d", comp.SourceFile, comp.LineNumber)
 					log.Printf("- Qualifier: %s", comp.Qualifier)
 					log.Printf("- Implements: %v", comp.Implements)
 					log.Printf("- Dependencies: %v", comp.Dependencies)
 				}
 			}
 
-			// Generate code
+			// Create generator
 			gen := wire.NewGenerator(components)
+
+			// Handle special modes
+			if showGraph {
+				gen.PrintDependencyGraph()
+				return
+			}
+
+			if dryRun {
+				if err := gen.ValidateOnly(); err != nil {
+					log.Fatalf("Validation failed: %v", err)
+				}
+				return
+			}
+
+			// Generate code
 			if err := gen.Generate(absDir); err != nil {
 				log.Fatalf("Error generating code: %v", err)
 			}
@@ -53,8 +69,9 @@ var (
 		},
 	}
 
-	dir, output   string
-	verbose, help bool
+	dir, output         string
+	verbose, help       bool
+	showGraph, dryRun   bool
 )
 
 func main() {
@@ -62,6 +79,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "wire/wire_gen.go", "Output file for generated code")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	rootCmd.PersistentFlags().BoolVarP(&help, "help", "h", false, "Show help message")
+	rootCmd.PersistentFlags().BoolVar(&showGraph, "graph", false, "Show dependency graph visualization")
+	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Validate components without generating files")
 
 	printBanner()
 	rootCmd.Execute()

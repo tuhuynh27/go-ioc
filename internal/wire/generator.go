@@ -273,14 +273,17 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 					VarName:   depVarName,
 				})
 			} else {
-				panic(fmt.Sprintf("Error: Could not resolve dependency '%s' with qualifier '%s' for component '%s.%s' in field '%s'.\n"+
-					"Please check:\n"+
-					"1. The dependency type exists and is marked with Component{}\n"+
-					"2. For interface dependencies, ensure an implementation struct tag is declared\n"+
-					"3. If using qualifiers, verify the qualifier values match\n"+
-					"4. The package containing the dependency is included in component scanning\n"+
-					"If you want more debugging information, re run the command with -verbose flag",
-					dep.Type, dep.Qualifier, init.Package, init.Type, dep.FieldName))
+				panic(fmt.Sprintf("Error: Could not resolve dependency '%s' with qualifier '%s'\n"+
+					"  Component: %s.%s in %s:%d\n"+
+					"  Field: '%s'\n\n"+
+					"Suggestions:\n"+
+					"1. Ensure dependency type exists and has Component{} marker\n"+
+					"2. Check qualifier values match exactly\n"+
+					"3. Verify package is included in scanning scope\n"+
+					"4. Run with --verbose for component discovery details\n"+
+					"5. Use --graph to visualize dependencies",
+					dep.Type, dep.Qualifier, init.Package, init.Type, 
+					comp.SourceFile, comp.LineNumber, dep.FieldName))
 			}
 		}
 
@@ -297,6 +300,194 @@ func (g *Generator) generateComponentInits(components []Component) []componentIn
 	}
 
 	return inits
+}
+
+// PrintDependencyGraph displays a visual representation of component dependencies
+func (g *Generator) PrintDependencyGraph() {
+	fmt.Println("Component Dependency Graph:")
+	fmt.Println("===========================")
+	
+	if len(g.components) == 0 {
+		fmt.Println("No components found")
+		return
+	}
+	
+	for i, comp := range g.components {
+		// Print component with source location
+		fmt.Printf("├── %s.%s", comp.Package, comp.Type)
+		if comp.Qualifier != "" {
+			fmt.Printf(" (qualifier: %s)", comp.Qualifier)
+		}
+		fmt.Printf(" [%s:%d]\n", comp.SourceFile, comp.LineNumber)
+		
+		// Print interfaces implemented
+		if len(comp.Implements) > 0 {
+			fmt.Printf("│   📋 Implements: %s\n", strings.Join(comp.Implements, ", "))
+		}
+		
+		// Print dependencies
+		if len(comp.Dependencies) > 0 {
+			fmt.Printf("│   🔗 Dependencies:\n")
+			for j, dep := range comp.Dependencies {
+				prefix := "│   │   ├──"
+				if j == len(comp.Dependencies)-1 {
+					prefix = "│   │   └──"
+				}
+				fmt.Printf("%s %s: %s", prefix, dep.FieldName, dep.Type)
+				if dep.Qualifier != "" {
+					fmt.Printf(" (qualifier: %s)", dep.Qualifier)
+				}
+				fmt.Println()
+			}
+		} else {
+			fmt.Printf("│   📝 No dependencies\n")
+		}
+		
+		// Add spacing between components
+		if i < len(g.components)-1 {
+			fmt.Printf("│\n")
+		}
+	}
+	
+	fmt.Printf("\nTotal components: %d\n", len(g.components))
+	fmt.Printf("Total dependencies: %d\n", g.countTotalDependencies())
+}
+
+// countTotalDependencies returns the total number of dependencies across all components
+func (g *Generator) countTotalDependencies() int {
+	total := 0
+	for _, comp := range g.components {
+		total += len(comp.Dependencies)
+	}
+	return total
+}
+
+// ValidateOnly performs all validation without generating files
+func (g *Generator) ValidateOnly() error {
+	startTime := time.Now()
+
+	// Validate that we have components to process
+	if len(g.components) == 0 {
+		return fmt.Errorf("no components found")
+	}
+
+	fmt.Printf("🔍 Validating %d components...\n", len(g.components))
+
+	// Sort components based on their dependencies (this will catch circular dependencies)
+	orderedComponents := g.topologicalSort()
+	
+	// Generate initialization code for validation (this will catch missing dependencies)
+	inits := g.generateComponentInits(orderedComponents)
+
+	// Perform additional validation checks
+	g.validateComponentStructure()
+	g.validateInterfaceImplementations()
+	g.validateQualifierUniqueness()
+
+	fmt.Printf("✅ Validation successful: %d components, %d dependencies\n", 
+		len(g.components), g.countTotalDependencies())
+	fmt.Printf("📊 Validation completed in %v\n", time.Since(startTime))
+	
+	// Print summary
+	fmt.Println("\n📋 Validation Summary:")
+	fmt.Printf("  - Components found: %d\n", len(g.components))
+	fmt.Printf("  - Total dependencies: %d\n", g.countTotalDependencies())
+	fmt.Printf("  - Initialization order: %d steps\n", len(inits))
+	fmt.Printf("  - Interface implementations: %d\n", g.countInterfaceImplementations())
+	
+	return nil
+}
+
+// validateComponentStructure checks for common component definition issues
+func (g *Generator) validateComponentStructure() {
+	for _, comp := range g.components {
+		// Check for components with duplicate qualifiers for the same interface
+		if len(comp.Implements) > 0 {
+			for _, iface := range comp.Implements {
+				duplicates := g.findDuplicateQualifiers(iface, comp.Qualifier)
+				if len(duplicates) > 1 {
+					log.Printf("⚠️  Warning: Multiple components implement '%s' with qualifier '%s': %v",
+						iface, comp.Qualifier, duplicates)
+				}
+			}
+		}
+	}
+}
+
+// validateInterfaceImplementations checks if all interface dependencies can be satisfied
+func (g *Generator) validateInterfaceImplementations() {
+	for _, comp := range g.components {
+		for _, dep := range comp.Dependencies {
+			if strings.Contains(dep.Type, ".") {
+				// Interface dependency - check if implementation exists
+				implementations := g.findImplementations(dep.Type, dep.Qualifier)
+				if len(implementations) == 0 {
+					log.Printf("⚠️  Warning: No implementation found for interface dependency '%s' with qualifier '%s' in component %s.%s",
+						dep.Type, dep.Qualifier, comp.Package, comp.Type)
+				} else if len(implementations) > 1 {
+					log.Printf("⚠️  Warning: Multiple implementations found for interface dependency '%s' with qualifier '%s': %v",
+						dep.Type, dep.Qualifier, implementations)
+				}
+			}
+		}
+	}
+}
+
+// validateQualifierUniqueness checks for qualifier conflicts
+func (g *Generator) validateQualifierUniqueness() {
+	qualifierMap := make(map[string][]string)
+	
+	for _, comp := range g.components {
+		for _, iface := range comp.Implements {
+			key := iface + ":" + comp.Qualifier
+			qualifierMap[key] = append(qualifierMap[key], comp.Package+"."+comp.Type)
+		}
+	}
+	
+	for key, components := range qualifierMap {
+		if len(components) > 1 {
+			parts := strings.Split(key, ":")
+			iface := parts[0]
+			qualifier := parts[1]
+			log.Printf("⚠️  Warning: Qualifier conflict for interface '%s' with qualifier '%s': %v",
+				iface, qualifier, components)
+		}
+	}
+}
+
+// findDuplicateQualifiers finds components that implement the same interface with the same qualifier
+func (g *Generator) findDuplicateQualifiers(iface, qualifier string) []string {
+	var duplicates []string
+	for _, comp := range g.components {
+		for _, impl := range comp.Implements {
+			if impl == iface && comp.Qualifier == qualifier {
+				duplicates = append(duplicates, comp.Package+"."+comp.Type)
+			}
+		}
+	}
+	return duplicates
+}
+
+// findImplementations finds all components that implement a given interface with qualifier
+func (g *Generator) findImplementations(iface, qualifier string) []string {
+	var implementations []string
+	for _, comp := range g.components {
+		for _, impl := range comp.Implements {
+			if strings.HasSuffix(impl, iface) && comp.Qualifier == qualifier {
+				implementations = append(implementations, comp.Package+"."+comp.Type)
+			}
+		}
+	}
+	return implementations
+}
+
+// countInterfaceImplementations counts total interface implementations
+func (g *Generator) countInterfaceImplementations() int {
+	total := 0
+	for _, comp := range g.components {
+		total += len(comp.Implements)
+	}
+	return total
 }
 
 // contains checks if a slice contains a string (with suffix matching)
@@ -343,10 +534,10 @@ func (g *Generator) dfs(comp Component, ordered *[]Component) {
 		cyclePath = append(cyclePath, componentKey)
 
 		panic(fmt.Sprintf("Cyclic dependency detected!\n"+
-			"Component %s.%s depends on a component that eventually depends back on it.\n"+
+			"Component %s.%s in %s:%d depends on a component that eventually depends back on it.\n"+
 			"Dependency path: %s\n"+
 			"Please check these components and their dependencies to resolve the cycle.",
-			comp.Package, comp.Type,
+			comp.Package, comp.Type, comp.SourceFile, comp.LineNumber,
 			strings.Join(cyclePath, " -> ")))
 	}
 

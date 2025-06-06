@@ -23,6 +23,8 @@ type Component struct {
 	PostConstruct bool         // Whether component has PostConstruct method
 	PreDestroy    bool         // Whether component has PreDestroy method
 	Constructor   string       // Name of the constructor function (e.g., "NewUserService")
+	SourceFile    string       // Source file where component is defined
+	LineNumber    int          // Line number where component is defined
 }
 
 // Dependency represents an autowired dependency field in a component
@@ -101,7 +103,7 @@ func ParseComponents(rootDir string) ([]Component, error) {
 		// Process each package
 		for _, pkg := range pkgs {
 			// Process each file in the package
-			for _, file := range pkg.Files {
+			for fileName, file := range pkg.Files {
 				// Inspect the AST of each file
 				ast.Inspect(file, func(n ast.Node) bool {
 					// Look for type declarations
@@ -125,11 +127,16 @@ func ParseComponents(rootDir string) ([]Component, error) {
 					fullPkgPath := filepath.Join(modulePath, relPath)
 					fullPkgPath = strings.ReplaceAll(fullPkgPath, string(filepath.Separator), "/")
 
+					// Get source location information
+					position := fset.Position(typeSpec.Pos())
+
 					// Initialize component with basic info
 					comp := Component{
-						Name:    typeSpec.Name.Name,
-						Type:    typeSpec.Name.Name,
-						Package: fullPkgPath,
+						Name:       typeSpec.Name.Name,
+						Type:       typeSpec.Name.Name,
+						Package:    fullPkgPath,
+						SourceFile: fileName,
+						LineNumber: position.Line,
 					}
 
 					// Analyze struct fields for component markers and metadata
