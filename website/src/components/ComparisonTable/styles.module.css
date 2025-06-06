@@ -1,0 +1,218 @@
+.comparison {
+  padding: 4rem 0;
+  background: var(--ifm-color-emphasis-100);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin: 2rem 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--ifm-background-surface-color);
+  font-size: 0.9rem;
+  table-layout: fixed;
+}
+
+.comparisonTable th {
+  background: var(--ifm-color-primary);
+  color: white;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 20%;
+}
+
+.comparisonTable th:first-child {
+  width: 25%;
+  text-align: left;
+}
+
+.comparisonTable th.highlight {
+  background: var(--ifm-color-primary-dark);
+  position: relative;
+}
+
+.comparisonTable th.highlight::after {
+  content: '⭐';
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.comparisonTable td {
+  padding: 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  vertical-align: middle;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.featureCell {
+  text-align: left !important;
+  font-weight: 500;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-content);
+}
+
+.goIocCell {
+  background: var(--ifm-color-primary-lightest);
+  font-weight: 500;
+  color: var(--ifm-color-content);
+}
+
+.highlight {
+  position: relative;
+}
+
+.excellent {
+  color: var(--ifm-color-success-dark);
+  font-weight: 600;
+  background: var(--ifm-color-success-lightest);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.warning {
+  color: var(--ifm-color-warning-dark);
+  font-weight: 600;
+  background: var(--ifm-color-warning-lightest);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.poor {
+  color: var(--ifm-color-danger-dark);
+  font-weight: 600;
+  background: var(--ifm-color-danger-lightest);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.highlights {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.highlightBox {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  transition: transform 0.2s ease;
+}
+
+.highlightBox:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.highlightBox h4 {
+  margin-bottom: 0.75rem;
+  color: var(--ifm-color-primary-dark);
+}
+
+.highlightBox p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.4;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .comparison {
+  background: var(--ifm-background-color-secondary);
+}
+
+[data-theme='dark'] .comparisonTable {
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-content);
+}
+
+[data-theme='dark'] .featureCell {
+  background: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-content);
+}
+
+[data-theme='dark'] .goIocCell {
+  background: var(--ifm-color-primary-darkest);
+  color: var(--ifm-color-content);
+}
+
+[data-theme='dark'] .highlightBox {
+  background: var(--ifm-background-surface-color);
+}
+
+[data-theme='dark'] .highlightBox h4 {
+  color: var(--ifm-color-primary-light);
+}
+
+[data-theme='dark'] .highlightBox p {
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* Responsive design */
+@media screen and (max-width: 996px) {
+  .comparison {
+    padding: 2rem 0;
+  }
+  
+  .comparisonTable {
+    font-size: 0.8rem;
+  }
+  
+  .comparisonTable th,
+  .comparisonTable td {
+    padding: 0.6rem 0.4rem;
+  }
+  
+  .comparisonTable th:first-child {
+    width: 30%;
+  }
+  
+  .comparisonTable th {
+    width: 17.5%;
+  }
+  
+  .highlightBox {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .tableWrapper {
+    margin: 1rem 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .comparisonTable {
+    min-width: 600px;
+    font-size: 0.75rem;
+  }
+  
+  .comparisonTable th,
+  .comparisonTable td {
+    padding: 0.5rem 0.3rem;
+    white-space: nowrap;
+  }
+  
+  .comparisonTable th:first-child {
+    width: 25%;
+    white-space: normal;
+  }
+}

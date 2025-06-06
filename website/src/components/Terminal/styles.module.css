@@ -1,0 +1,126 @@
+.terminal {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  background: #1e1e1e;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
+  margin: 1rem 0;
+  max-width: 100%;
+}
+
+.terminalHeader {
+  background: linear-gradient(180deg, #f6f6f6 0%, #e8e8e8 100%);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid #d1d1d1;
+  position: relative;
+}
+
+.trafficLights {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.light::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+}
+
+.red {
+  background: linear-gradient(135deg, #ff5f57 0%, #ff3b30 100%);
+  border: 0.5px solid #e2463f;
+}
+
+.yellow {
+  background: linear-gradient(135deg, #ffbd2e 0%, #ffab00 100%);
+  border: 0.5px solid #e09900;
+}
+
+.green {
+  background: linear-gradient(135deg, #28ca42 0%, #34c759 100%);
+  border: 0.5px solid #25a73a;
+}
+
+.terminalTitle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a4a4a;
+  text-align: center;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.terminalBody {
+  background: #1e1e1e;
+  color: #ffffff;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 60px;
+  position: relative;
+}
+
+.terminalBody::before {
+  content: '$ ';
+  color: #00ff88;
+  font-weight: bold;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .terminalHeader {
+  background: linear-gradient(180deg, #2d2d2d 0%, #1f1f1f 100%);
+  border-bottom: 1px solid #404040;
+}
+
+[data-theme='dark'] .terminalTitle {
+  color: #cccccc;
+}
+
+[data-theme='dark'] .red {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+}
+
+[data-theme='dark'] .yellow {
+  background: linear-gradient(135deg, #ffd93d 0%, #ffb300 100%);
+}
+
+[data-theme='dark'] .green {
+  background: linear-gradient(135deg, #6bcf7f 0%, #4caf50 100%);
+}
+
+/* Responsive design */
+@media screen and (max-width: 768px) {
+  .terminal {
+    margin: 0.5rem 0;
+  }
+  
+  .terminalBody {
+    padding: 12px;
+    font-size: 13px;
+  }
+  
+  .terminalTitle {
+    font-size: 12px;
+  }
+}
