@@ -49,7 +49,7 @@ export default function QuickStart(): ReactNode {
               </div>
             </div>
             
-            <div className="text--center margin-top--lg">
+            <div className={`text--center margin-top--lg ${styles.buttonContainer}`}>
               <Link
                 className="button button--primary button--lg"
                 to="/docs/intro">
